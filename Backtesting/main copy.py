@@ -88,16 +88,15 @@ def main(ticker):
 
     for strategy in [
         LongOnlyStrategy,
-        ImprovedLongOnlyStrategy,
-        StopLossStrategy,
-        MultiIndicatorStrategy,
-        MeanReversionWithRSI,
+        # ImprovedLongOnlyStrategy,
+        # StopLossStrategy,
+        # MultiIndicatorStrategy,
+        # MeanReversionWithRSI,
         # StrategyTest,
     ]:
         # print(f"\n\n############################回测策略: {strategy.__name__}")
-        bt = Backtest(data, strategy, cash=5000, commission=0.002)
+        bt = Backtest(data, strategy, cash=1000, commission=0.0015)
         stats = bt.run()
-        # bt.plot()
         out_put_result(stats, data)
         result = (
             stats["_equity_curve"]["Equity"].iloc[-1]
@@ -110,7 +109,11 @@ def main(ticker):
 
 
 if __name__ == "__main__":
-    list1 = ["INTC", "WBA", "KHC", "M", "AAL", "NCLH", "PARA", "SLB", "BIIB"]
+    list1 = [
+        "INTC",
+        #  "WBA", "KHC", "M", "AAL", "NCLH", "PARA", "SLB", "BIIB",
+        "NTES",
+    ]
     list2 = [
         "AAPL",
         "TSLA",
@@ -122,26 +125,28 @@ if __name__ == "__main__":
         "MSFT",
         "AMZN",
         "NVDA",
+        "QCOM",
+        "BABA",
     ]
 
-    for ticker in list1:
-        # print(f"\n回测股票: {ticker}")
-        main(ticker)
+    # for ticker in list1:
+    #     # print(f"\n回测股票: {ticker}")
+    #     main(ticker)
 
-    for key in sum_map:
-        print(f"{key} : {sum_map[key]}")
+    # for key in sum_map:
+    #     print(f"{key} : {sum_map[key]}")
 
-    sum_map = {}
-    for ticker in list2:
-        # print(f"\n回测股票: {ticker}")
-        main(ticker)
-    print(f"\n\n\n")
-    for key in sum_map:
-        print(f"{key} : {sum_map[key]}")
+    # sum_map = {}
+    # for ticker in list2:
+    #     # print(f"\n回测股票: {ticker}")
+    #     main(ticker)
+    # print(f"\n\n\n")
+    # for key in sum_map:
+    #     print(f"{key} : {sum_map[key]}")
 
     sum_map = {}
     for ticker in list1 + list2:
-        # print(f"\n回测股票: {ticker}")
+        print(f"\n回测股票: {ticker}")
         main(ticker)
     print(f"\n\n\n")
     for key in sum_map:
