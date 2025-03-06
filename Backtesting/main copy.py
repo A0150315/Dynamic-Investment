@@ -7,6 +7,7 @@ from improved_long_only_strategy import ImprovedLongOnlyStrategy
 from stop_loss_strategy import StopLossStrategy
 from multiIndicator_strategy import MultiIndicatorStrategy
 from strategy_test import StrategyTest
+from mean_reversion_with_rsi import MeanReversionWithRSI
 
 data_map = {}
 
@@ -65,12 +66,20 @@ def out_put_result(stats, data):
     # print(f"- 胜率: {stats['Win Rate [%]']:.2f}%")
 
 
-
 def main(ticker):
     if ticker in data_map:
         data = data_map[ticker]
     else:
+        # start_date = "2008-01-01"
+        # end_date = "2009-03-31"
         data = yf.download(ticker, period="5y", interval="1d", multi_level_index=False)
+        # data = yf.download(
+        #     ticker,
+        #     start=start_date,
+        #     end=end_date,
+        #     interval="1d",
+        #     multi_level_index=False,
+        # )
         data_map[ticker] = data
 
     # print(data.head())
@@ -82,6 +91,7 @@ def main(ticker):
         ImprovedLongOnlyStrategy,
         StopLossStrategy,
         MultiIndicatorStrategy,
+        MeanReversionWithRSI,
         # StrategyTest,
     ]:
         # print(f"\n\n############################回测策略: {strategy.__name__}")
@@ -89,7 +99,10 @@ def main(ticker):
         stats = bt.run()
         # bt.plot()
         out_put_result(stats, data)
-        result = stats['_equity_curve']['Equity'].iloc[-1]-stats['_equity_curve']['Equity'].iloc[0]
+        result = (
+            stats["_equity_curve"]["Equity"].iloc[-1]
+            - stats["_equity_curve"]["Equity"].iloc[0]
+        )
         if strategy.__name__ in sum_map:
             sum_map[strategy.__name__] += result
         else:
@@ -97,13 +110,24 @@ def main(ticker):
 
 
 if __name__ == "__main__":
-    list1 = ["INTC","WBA","KHC","M","AAL","NCLH","PARA","SLB","BIIB"]
-    list2 = ["AAPL","TSLA","TSM","GOOG","META","QQQ","MCD","MSFT","AMZN","NVDA"]
+    list1 = ["INTC", "WBA", "KHC", "M", "AAL", "NCLH", "PARA", "SLB", "BIIB"]
+    list2 = [
+        "AAPL",
+        "TSLA",
+        "TSM",
+        "GOOG",
+        "META",
+        "QQQ",
+        "MCD",
+        "MSFT",
+        "AMZN",
+        "NVDA",
+    ]
 
     for ticker in list1:
         # print(f"\n回测股票: {ticker}")
         main(ticker)
-    
+
     for key in sum_map:
         print(f"{key} : {sum_map[key]}")
 
@@ -115,13 +139,10 @@ if __name__ == "__main__":
     for key in sum_map:
         print(f"{key} : {sum_map[key]}")
 
-
     sum_map = {}
-    for ticker in list1+list2:
+    for ticker in list1 + list2:
         # print(f"\n回测股票: {ticker}")
         main(ticker)
     print(f"\n\n\n")
     for key in sum_map:
         print(f"{key} : {sum_map[key]}")
-
-
