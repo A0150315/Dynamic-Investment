@@ -78,9 +78,9 @@ def main(ticker):
     # print(f"数据起止日期: {data.index[0]} 至 {data.index[-1]}")
 
     for strategy in [
-        # LongOnlyStrategy,
-        # ImprovedLongOnlyStrategy,
-        # StopLossStrategy,
+        LongOnlyStrategy,
+        ImprovedLongOnlyStrategy,
+        StopLossStrategy,
         MultiIndicatorStrategy,
         # StrategyTest,
     ]:
@@ -97,8 +97,8 @@ def main(ticker):
 
 
 if __name__ == "__main__":
-    list1 = ["INTC","WBA","KHC","M","AAL"]
-    list2 = ["AAPL","TSLA","TSM","GOOG","META","QQQ"]
+    list1 = ["INTC","WBA","KHC","M","AAL","NCLH","PARA","SLB","BIIB"]
+    list2 = ["AAPL","TSLA","TSM","GOOG","META","QQQ","MCD","MSFT","AMZN","NVDA"]
 
     for ticker in list1:
         # print(f"\n回测股票: {ticker}")
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     for ticker in list2:
         # print(f"\n回测股票: {ticker}")
         main(ticker)
-
+    print(f"\n\n\n")
     for key in sum_map:
         print(f"{key} : {sum_map[key]}")
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     for ticker in list1+list2:
         # print(f"\n回测股票: {ticker}")
         main(ticker)
-    
+    print(f"\n\n\n")
     for key in sum_map:
         print(f"{key} : {sum_map[key]}")
 
