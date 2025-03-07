@@ -136,7 +136,6 @@ if __name__ == "__main__":
         "GOOG",
         "META",
         "QQQ",
-        "MCD",
         "MSFT",
         "AMZN",
         "NVDA",

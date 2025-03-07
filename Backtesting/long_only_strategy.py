@@ -57,8 +57,8 @@ class LongOnlyStrategy(Strategy):
                 f.write(
                     f"{self.data.index[-1]},"
                     f"{self.ticker},"
-                    f"{size * price:.2f},"
-                    f"{price},"
+                    f"{size * self.data.Close[-1]:.2f},"
+                    f"{self.data.Close[-1]:.2f},"
                     f"{signal},"
-                    f"{size},"
+                    f"{size}\n"
                 )
