@@ -1,6 +1,7 @@
 import yfinance as yf
 from backtesting import Backtest
 import pandas as pd
+from datetime import date, timedelta
 
 from long_only_strategy import LongOnlyStrategy
 from improved_long_only_strategy import ImprovedLongOnlyStrategy
@@ -71,8 +72,11 @@ def main(ticker):
         data = data_map[ticker]
     else:
         # start_date = "2008-01-01"
-        # end_date = "2009-03-31"
-        data = yf.download(ticker, period="5y", interval="1d", multi_level_index=False)
+        today = date.today()
+        start_date = today - timedelta(days=365 * 5)
+        data = yf.download(
+            ticker, start=start_date, end=today, interval="1d", multi_level_index=False
+        )
         # data = yf.download(
         #     ticker,
         #     start=start_date,
@@ -95,8 +99,10 @@ def main(ticker):
         # StrategyTest,
     ]:
         # print(f"\n\n############################回测策略: {strategy.__name__}")
+        strategy.ticker = ticker
         bt = Backtest(data, strategy, cash=1000, commission=0.0015)
         stats = bt.run()
+        # bt.plot()
         out_put_result(stats, data)
         result = (
             stats["_equity_curve"]["Equity"].iloc[-1]
@@ -111,10 +117,19 @@ def main(ticker):
 if __name__ == "__main__":
     list1 = [
         "INTC",
-        #  "WBA", "KHC", "M", "AAL", "NCLH", "PARA", "SLB", "BIIB",
+        "WBA",
+        "KHC",
+        "M",
+        "AAL",
+        "NCLH",
+        "PARA",
+        "SLB",
+        "BIIB",
         "NTES",
     ]
     list2 = [
+        "AMD",
+        "MCD",
         "AAPL",
         "TSLA",
         "TSM",
