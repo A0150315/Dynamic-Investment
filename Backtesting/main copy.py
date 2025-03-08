@@ -2,6 +2,7 @@ import yfinance as yf
 from backtesting import Backtest
 import pandas as pd
 from datetime import date, timedelta
+# import os
 
 from long_only_strategy import LongOnlyStrategy
 # from improved_long_only_strategy import ImprovedLongOnlyStrategy
@@ -102,7 +103,13 @@ def main(ticker):
         strategy.ticker = ticker
         bt = Backtest(data, strategy, cash=1000, commission=0.0015)
         stats = bt.run()
-        # bt.plot()
+
+        # output_dir = "backtest_results"
+        # os.makedirs(output_dir, exist_ok=True)
+
+        # html_filename = f"{output_dir}/{ticker}.html"
+        # bt.plot(filename=html_filename)
+        
         out_put_result(stats, data)
         result = (
             stats["_equity_curve"]["Equity"].iloc[-1]
