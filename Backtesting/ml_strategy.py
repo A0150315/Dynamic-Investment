@@ -464,7 +464,7 @@ class MLStrategy(Strategy):
             self.predictions = np.ones(len(self.data.Close)) * 0.5  # 默认为0.5
             
             match_count = 0
-            
+            print(f"开始预测...")
             # 找到特征数据在原始数据中的位置
             for i, idx in enumerate(X_all.index):
                 try:

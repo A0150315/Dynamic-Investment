@@ -165,7 +165,7 @@ if __name__ == "__main__":
         print(f"使用推荐的 {args.dataset} 数据集进行训练")
         training_stocks = get_recommended_training_set(args.dataset.upper())
         # 测试使用自定义的中国股票
-        test_stocks = custom_stocks["CHINA"]
+        test_stocks = custom_stocks[args.dataset.upper()]
     else:
         # 使用自定义股票集
         print("使用自定义股票列表进行训练")

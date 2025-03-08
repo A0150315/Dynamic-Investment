@@ -50,6 +50,110 @@
             ]
         },
         {
+            "name": "训练+回测(中国专注集)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "CHINA_FOCUSED"
+            ]
+        },
+        {
+            "name": "训练+回测(科技专注集)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "TECH_FOCUSED"
+            ]
+        },
+        {
+            "name": "训练+回测(全球平衡集)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "BALANCED_GLOBAL"
+            ]
+        },
+        {
+            "name": "训练+回测(中国科技股)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "CHINA_TECH"
+            ]
+        },
+        {
+            "name": "训练+回测(中国消费股)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "CHINA_CONSUMER"
+            ]
+        },
+        {
+            "name": "训练+回测(美国金融股)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "US_FINANCE"
+            ]
+        },
+        {
+            "name": "训练+回测(美国医疗股)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "US_HEALTHCARE"
+            ]
+        },
+        {
+            "name": "训练+回测(美国消费股)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "US_CONSUMER"
+            ]
+        },
+        {
             "name": "训练+回测(5年数据)",
             "type": "debugpy",
             "request": "launch",

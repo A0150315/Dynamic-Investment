@@ -56,12 +56,107 @@ SECTOR_MAPPINGS = {
 
 # 推荐的训练集股票（代表性强且数据质量高）
 RECOMMENDED_TRAINING_STOCKS = {
-    'US_LARGE_CAP': ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'BRK-B', 'JNJ', 'V', 'PG', 'JPM', 'UNH', 'HD', 'NVDA', 'MRK', 'DIS'],
-    'US_TECH': ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'AVGO', 'CSCO', 'ADBE', 'CRM', 'INTC', 'AMD', 'IBM', 'QCOM', 'TXN'],
-    'CHINA': ['BABA', 'JD', 'PDD', 'BIDU', 'TCEHY', 'NIO', 'NTES', 'BILI', 'TAL', 'YUMC'],
-    'INDICES': ['^GSPC', '^DJI', '^IXIC', '^RUT'],
-    'ETF': ['SPY', 'QQQ', 'IWM', 'DIA', 'XLK', 'XLF', 'XLV', 'XLE', 'VTI', 'VEA', 'VWO'],
-    'MIXED_OPTIMAL': ['AAPL', 'MSFT', 'AMZN', 'SPY', 'QQQ', 'BABA', 'JD', 'JPM', 'JNJ', 'XOM', 'WMT', 'PFE', 'NVDA', 'TSLA']
+    'US_LARGE_CAP': [
+        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'BRK-B', 'JNJ', 'V', 'PG', 'JPM', 
+        'UNH', 'HD', 'NVDA', 'MRK', 'DIS', 'PFE', 'KO', 'PEP', 'CSCO', 'VZ', 
+        'INTC', 'CMCSA', 'ADBE', 'NFLX', 'CRM', 'ABT', 'TMO', 'CVX', 'XOM', 'COST'
+    ],
+    
+    'US_TECH': [
+        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'AVGO', 'CSCO', 'ADBE', 'CRM', 
+        'INTC', 'AMD', 'IBM', 'QCOM', 'TXN', 'TSLA', 'NFLX', 'PYPL', 'ORCL', 'AMAT',
+        'MU', 'KLAC', 'NOW', 'LRCX', 'SNPS', 'CDNS', 'INTU', 'ADI', 'UBER', 'ABNB'
+    ],
+    
+    'US_FINANCE': [
+        'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'AXP', 'V', 'MA', 
+        'SCHW', 'USB', 'PNC', 'TFC', 'BK', 'COF', 'AIG', 'MET', 'PRU', 'CB'
+    ],
+    
+    'US_HEALTHCARE': [
+        'JNJ', 'PFE', 'MRK', 'ABBV', 'ABT', 'UNH', 'TMO', 'DHR', 'BMY', 'AMGN', 
+        'LLY', 'GILD', 'ISRG', 'BIIB', 'CVS', 'VRTX', 'REGN', 'MRNA', 'ZTS', 'BSX'
+    ],
+    
+    'US_CONSUMER': [
+        'KO', 'PEP', 'PG', 'WMT', 'COST', 'HD', 'MCD', 'SBUX', 'NKE', 'DIS',
+        'TGT', 'LOW', 'YUM', 'MDLZ', 'CL', 'EL', 'MO', 'PM', 'AMZN', 'EBAY'
+    ],
+    
+    'CHINA': [
+        'BABA', 'JD', 'PDD', 'BIDU', 'TCEHY', 'NIO', 'NTES', 'BILI', 'TAL', 'YUMC',
+        'LI', 'XPEV', 'TME', 'HTHT', 'ZTO', 'VIPS', 'ATHM', 'BEKE', 'FUTU', 'DADA',
+        'IQ', 'GDS', 'BGNE', 'EDU', 'VNET', 'WB', 'YY', 'JOBS', 'MOMO', 'NOAH'
+    ],
+    
+    'CHINA_TECH': [
+        'BABA', 'JD', 'BIDU', 'PDD', 'TCEHY', 'NTES', 'BILI', 'FUTU', 'GDS', 'IQ',
+        'WB', 'YY', 'VNET', 'JOYY', 'KC', 'ATHM', 'QTT', 'HUYA', 'DOYU', 'WUBA'
+    ],
+    
+    'CHINA_CONSUMER': [
+        'JD', 'PDD', 'YUMC', 'HTHT', 'VIPS', 'BEKE', 'NIU', 'ZTO', 'DADA', 'YSG',
+        'LX', 'GOTU', 'LKNCY', 'ZH', 'TCOM', 'SXTC', 'EDU', 'BEDU', 'LAIX', 'TAL'
+    ],
+    
+    'INDICES': [
+        '^GSPC', '^DJI', '^IXIC', '^RUT', '^VIX', '^FTSE', '^N225', '^HSI', '^GDAXI', '^FCHI'
+    ],
+    
+    'ETF': [
+        'SPY', 'QQQ', 'IWM', 'DIA', 'XLK', 'XLF', 'XLV', 'XLE', 'VTI', 'VEA', 
+        'VWO', 'VNQ', 'VIG', 'VOO', 'ARKK', 'LQD', 'TLT', 'HYG', 'AGG', 'GLD'
+    ],
+    
+    'MIXED_OPTIMAL': [
+        # 美国大型科技
+        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'TSLA',
+        # 中国科技
+        'BABA', 'JD', 'PDD', 'BIDU', 'TCEHY',
+        # 金融
+        'JPM', 'V', 'BAC', 
+        # 医疗保健
+        'JNJ', 'PFE', 'UNH',
+        # 消费
+        'WMT', 'KO', 'MCD',
+        # 指数和ETF
+        'SPY', 'QQQ', '^GSPC', '^VIX',
+        # 能源
+        'XOM', 'CVX'
+    ],
+    
+    'CHINA_FOCUSED': [
+        # 中国股票
+        'BABA', 'JD', 'PDD', 'BIDU', 'TCEHY', 'NIO', 'NTES', 'BILI', 'TAL', 'YUMC',
+        'LI', 'XPEV', 'TME', 'HTHT', 'ZTO', 'VIPS', 'FUTU', 'DADA',
+        # 相关指数和ETF
+        '^HSI', 'MCHI', 'KWEB', 'FXI', 'CQQQ', 'CHIQ', 'CHIX',
+        # 几个美国大盘股作为对照
+        'AAPL', 'MSFT', 'AMZN', 'SPY'
+    ],
+    
+    'TECH_FOCUSED': [
+        # 美国科技
+        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'CRM',
+        'ADBE', 'PYPL', 'NFLX', 'CSCO', 'AVGO', 'QCOM', 'MU', 'AMAT', 'TXN', 'KLAC',
+        # 中国科技
+        'BABA', 'JD', 'BIDU', 'PDD', 'TCEHY', 'NTES', 'BILI',
+        # 相关ETF
+        'XLK', 'QQQ', 'ARKK', 'SMH', 'SOXX'
+    ],
+    
+    'BALANCED_GLOBAL': [
+        # 美国各行业
+        'AAPL', 'MSFT', 'GOOGL', 'JPM', 'JNJ', 'WMT', 'XOM', 'PG', 'DIS', 'KO',
+        # 中国
+        'BABA', 'JD', 'PDD', 'BIDU', 'TCEHY',
+        # 欧洲
+        'VOD', 'BP', 'GSK', 'BTI', 'UL',
+        # 全球ETF
+        'SPY', 'EFA', 'EEM', 'VEU', 'ACWI',
+        # 行业ETF
+        'XLK', 'XLF', 'XLV', 'XLE', 'XLY'
+    ]
 }
 
 def get_stock_type(ticker):
@@ -112,7 +207,7 @@ def get_sector_features(ticker):
     
     return features
 
-def get_recommended_training_set(category='MIXED_OPTIMAL', limit=15):
+def get_recommended_training_set(category='MIXED_OPTIMAL', limit=50):
     """
     获取推荐的训练股票列表
     
