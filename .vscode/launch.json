@@ -5,7 +5,7 @@
             "name": "回测(不训练模型)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": []
@@ -14,7 +14,7 @@
             "name": "训练(混合优化集)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -27,7 +27,7 @@
             "name": "训练(美国科技股)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -40,7 +40,7 @@
             "name": "训练(中国股票)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -53,7 +53,7 @@
             "name": "训练(中国专注集)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -66,7 +66,7 @@
             "name": "训练(科技专注集)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -79,7 +79,7 @@
             "name": "训练(全球平衡集)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -92,7 +92,7 @@
             "name": "训练(中国科技股)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -105,7 +105,7 @@
             "name": "训练(中国消费股)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -118,7 +118,7 @@
             "name": "训练(美国金融股)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -131,7 +131,7 @@
             "name": "训练(美国医疗股)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -144,43 +144,13 @@
             "name": "训练(美国消费股)+回测",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
                 "--train-model",
                 "--dataset",
                 "US_CONSUMER"
-            ]
-        },
-        {
-            "name": "训练(5年数据)+回测",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "--train-model",
-                "--dataset",
-                "MIXED_OPTIMAL",
-                "--years",
-                "5"
-            ]
-        },
-        {
-            "name": "训练(10年数据)+回测",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "--train-model",
-                "--dataset",
-                "MIXED_OPTIMAL",
-                "--years",
-                "10"
             ]
         },
         {
@@ -202,27 +172,15 @@
             "args": []
         },
         {
-            "name": "混合优化集回测中国股票(不训练)",
+            "name": "回测自定义股票(不训练)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "program": "${workspaceFolder}/Backtesting/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
                 "--dataset",
-                "CHINA"
-            ]
-        },
-        {
-            "name": "中国专注集回测中国股票(不训练)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/Backtesting/main copy.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "--dataset",
-                "CHINA_FOCUSED"
+                "MY"
             ]
         }
     ],

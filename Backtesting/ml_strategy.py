@@ -672,9 +672,6 @@ class MLStrategy(Strategy):
         # 只在有足够的历史数据后交易
         if current_idx < max(self.window, 200):
             return
-
-        # 检查是否是最后一个交易日
-        is_last_day = current_idx == len(self.data.Close) - 1
             
         # 防御性检查：确保当前索引有效
         if current_idx >= len(self.data.Close):
@@ -755,13 +752,6 @@ class MLStrategy(Strategy):
                     position_return = self.get_position_return()
                     print(f"当前持仓: {self.position.size} 股, "
                           f"当前收益: {position_return*100:.2f}%")
-        
-        # === 最后一天强制平仓 ===
-        if is_last_day and self.position:
-            sell_size = self.position.size
-            self.safe_sell()  # 卖出全部
-            print(f"最后交易日平仓: {self.data.index[current_idx]}, 价格: {current_price:.2f}, 卖出: {sell_size}股")
-            return  # 平仓后直接返回，不执行其他交易逻辑
         
         # ===== 改进的交易逻辑 =====
         
@@ -1086,17 +1076,6 @@ class MLStrategy(Strategy):
                     self.position.close()
                     remaining_size = 0
                 else:
-                    # 部分平仓 - 这里不能直接使用close(size=...)
-                    # 需要先记录原始持仓信息，然后关闭全部，再重新开一个小的仓位
-                    
-                    # 记录原始持仓的入场价格和方向
-                    if hasattr(self.position, 'entry_price'):
-                        entry_price = self.position.entry_price
-                    elif hasattr(self.position, 'open_price'):
-                        entry_price = self.position.open_price
-                    else:
-                        entry_price = price_before * 0.95  # 假设一个合理的入场价格
-                    
                     # 记录是多头还是空头
                     is_long = self.position.is_long if hasattr(self.position, 'is_long') else True
                     

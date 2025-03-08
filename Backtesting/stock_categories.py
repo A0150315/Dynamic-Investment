@@ -7,7 +7,7 @@ TECH_STOCKS = [
     'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'META', 'NVDA', 
     'TSLA', 'AMD', 'INTC', 'AVGO', 'QCOM', 'CSCO', 'ORCL', 
     'IBM', 'CRM', 'ADBE', 'NFLX', 'PYPL', 'INTC', 'AMAT',
-    'MU', 'TXN', 'UBER', 'ABNB', 'SNOW', 'ZM', 'PLTR'
+    'MU', 'TXN', 'UBER', 'ABNB', 'SNOW', 'ZM', 'PLTR', "SPOTY"
 ]
 
 CHINA_STOCKS = [
@@ -40,7 +40,7 @@ HEALTHCARE_STOCKS = [
 
 CONSUMER_STOCKS = [
     'KO', 'PEP', 'PG', 'WMT', 'COST', 'HD', 'MCD', 'SBUX', 
-    'NKE', 'DIS', 'NFLX', 'AMZN', 'BABA', 'JD', 'TGT'
+    'NKE', 'DIS', 'NFLX', 'AMZN', 'BABA', 'JD', 'TGT', "SPOTY"
 ]
 
 # 行业分类映射
@@ -54,34 +54,59 @@ SECTOR_MAPPINGS = {
     'consumer': CONSUMER_STOCKS
 }
 
+US_TECH = [
+        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'AVGO', 'CSCO', 'ADBE', 'CRM', 
+        'INTC', 'AMD', 'IBM', 'QCOM', 'TXN', 'TSLA', 'NFLX', 'PYPL', 'ORCL', 'AMAT',
+        'MU', 'KLAC', 'NOW', 'LRCX', 'SNPS', 'CDNS', 'INTU', 'ADI', 'UBER', 'ABNB'
+    ]
+
+INDICES = [
+        '^GSPC', '^DJI', '^IXIC', '^RUT', '^VIX', '^FTSE', '^N225', '^HSI', '^GDAXI', '^FCHI'
+    ]
+
+US_FINANCE = [
+        'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'AXP', 'V', 'MA', 
+        'SCHW', 'USB', 'PNC', 'TFC', 'BK', 'COF', 'AIG', 'MET', 'PRU', 'CB'
+    ]
+
+US_HEALTHCARE = [
+        'JNJ', 'PFE', 'MRK', 'ABBV', 'ABT', 'UNH', 'TMO', 'DHR', 'BMY', 'AMGN', 
+        'LLY', 'GILD', 'ISRG', 'BIIB', 'CVS', 'VRTX', 'REGN', 'MRNA', 'ZTS', 'BSX'
+    ]
+
+US_CONSUMER = [
+        'KO', 'PEP', 'PG', 'WMT', 'COST', 'HD', 'MCD', 'SBUX', 'NKE', 'DIS',
+        'TGT', 'LOW', 'YUM', 'MDLZ', 'CL', 'EL', 'MO', 'PM', 'AMZN', 'EBAY'
+    ]
+
 # 推荐的训练集股票（代表性强且数据质量高）
 RECOMMENDED_TRAINING_STOCKS = {
+    
+    'MY': [
+        'AAPL', 'MSFT', 'AMZN', 'GOOG', 'META', 'NVDA', 
+        'INTC', 'ADBE', 'NFLX', "TSLA", "TSM", "AMD", "MCD","SPOTY",
+        "NTES", "TCEHY", "BABA", "BIDU"
+    ],
+
     'US_LARGE_CAP': [
         'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'BRK-B', 'JNJ', 'V', 'PG', 'JPM', 
         'UNH', 'HD', 'NVDA', 'MRK', 'DIS', 'PFE', 'KO', 'PEP', 'CSCO', 'VZ', 
         'INTC', 'CMCSA', 'ADBE', 'NFLX', 'CRM', 'ABT', 'TMO', 'CVX', 'XOM', 'COST'
     ],
     
-    'US_TECH': [
-        'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'AVGO', 'CSCO', 'ADBE', 'CRM', 
-        'INTC', 'AMD', 'IBM', 'QCOM', 'TXN', 'TSLA', 'NFLX', 'PYPL', 'ORCL', 'AMAT',
-        'MU', 'KLAC', 'NOW', 'LRCX', 'SNPS', 'CDNS', 'INTU', 'ADI', 'UBER', 'ABNB'
-    ],
+    'US_TECH': US_TECH,
+    "TECH":US_TECH,
     
-    'US_FINANCE': [
-        'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'BLK', 'AXP', 'V', 'MA', 
-        'SCHW', 'USB', 'PNC', 'TFC', 'BK', 'COF', 'AIG', 'MET', 'PRU', 'CB'
-    ],
+    'US_FINANCE': US_FINANCE,
+    "FINANCE":US_FINANCE,
     
-    'US_HEALTHCARE': [
-        'JNJ', 'PFE', 'MRK', 'ABBV', 'ABT', 'UNH', 'TMO', 'DHR', 'BMY', 'AMGN', 
-        'LLY', 'GILD', 'ISRG', 'BIIB', 'CVS', 'VRTX', 'REGN', 'MRNA', 'ZTS', 'BSX'
-    ],
+    'US_HEALTHCARE': US_HEALTHCARE,
+    "HEALTHCARE":US_HEALTHCARE,
     
-    'US_CONSUMER': [
-        'KO', 'PEP', 'PG', 'WMT', 'COST', 'HD', 'MCD', 'SBUX', 'NKE', 'DIS',
-        'TGT', 'LOW', 'YUM', 'MDLZ', 'CL', 'EL', 'MO', 'PM', 'AMZN', 'EBAY'
-    ],
+    
+    'US_CONSUMER': US_CONSUMER,
+    "CONSUMER":US_CONSUMER,
+    
     
     'CHINA': [
         'BABA', 'JD', 'PDD', 'BIDU', 'TCEHY', 'NIO', 'NTES', 'BILI', 'TAL', 'YUMC',
@@ -99,9 +124,8 @@ RECOMMENDED_TRAINING_STOCKS = {
         'LX', 'GOTU', 'LKNCY', 'ZH', 'TCOM', 'SXTC', 'EDU', 'BEDU', 'LAIX', 'TAL'
     ],
     
-    'INDICES': [
-        '^GSPC', '^DJI', '^IXIC', '^RUT', '^VIX', '^FTSE', '^N225', '^HSI', '^GDAXI', '^FCHI'
-    ],
+    "INDEX":INDICES,
+    'INDICES': INDICES,
     
     'ETF': [
         'SPY', 'QQQ', 'IWM', 'DIA', 'XLK', 'XLF', 'XLV', 'XLE', 'VTI', 'VEA', 
@@ -138,7 +162,7 @@ RECOMMENDED_TRAINING_STOCKS = {
     'TECH_FOCUSED': [
         # 美国科技
         'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'CRM',
-        'ADBE', 'PYPL', 'NFLX', 'CSCO', 'AVGO', 'QCOM', 'MU', 'AMAT', 'TXN', 'KLAC',
+        'ADBE', 'PYPL', 'NFLX', 'CSCO', 'AVGO', 'QCOM', 'MU', 'AMAT', 'TXN', 'KLAC',"SPOTY",
         # 中国科技
         'BABA', 'JD', 'BIDU', 'PDD', 'TCEHY', 'NTES', 'BILI',
         # 相关ETF
