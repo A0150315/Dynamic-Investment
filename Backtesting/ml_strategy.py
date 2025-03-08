@@ -7,6 +7,10 @@ import os
 import logging
 import yfinance as yf
 from datetime import datetime
+import traceback
+
+from model_trainer import train_master_model
+from stock_categories import get_stock_type
 
 class MLStrategy(Strategy):
     """
@@ -414,29 +418,53 @@ class MLStrategy(Strategy):
         else:
             # 尝试从文件加载
             try:
-                if os.path.exists(MLStrategy.master_model_path):
-                    model_data = joblib.load(MLStrategy.master_model_path)
-                    
-                    # 检查是否为新格式（字典结构）
-                    if isinstance(model_data, dict) and 'model' in model_data:
-                        print(f"加载新格式的模型（含元数据）")
-                        MLStrategy.master_model = model_data  # 保存整个字典
-                        self.model_features = model_data['features']
-                        print(f"模型训练日期: {model_data.get('training_date', '未知')}")
-                        print(f"模型使用的特征数: {len(self.model_features)}")
-                        self.model = model_data['model']  # 保存实际的模型对象而非整个字典
+                category = get_stock_type(self.ticker).upper()
+                model_path = MLStrategy.master_model_path.replace('.pkl', f'_{category}.pkl')
+                
+                try:
+                    # 尝试加载主模型
+                    if os.path.exists(model_path):
+                        print(f"尝试从文件加载主模型: {model_path}")
+                        model_data = joblib.load(model_path)
+                        
+                        # 检查模型格式
+                        # 打印模型数据类型，帮助调试
+                        print(f"模型数据类型: {type(model_data)}")
+                        
+                        # 如果是字典并包含features和model，则为新格式
+                        if isinstance(model_data, dict) and 'features' in model_data and 'model' in model_data:
+                            print(f"加载新格式的模型（含元数据）")
+                            MLStrategy.master_model = model_data  # 保存整个字典
+                            self.model_features = model_data['features']
+                            print(f"模型训练日期: {model_data.get('training_date', '未知')}")
+                            print(f"模型使用的特征数: {len(self.model_features)}")
+                            self.model = model_data['model']  # 保存实际的模型对象而非整个字典
+                        else:
+                            # 旧格式，直接使用
+                            print(f"加载旧格式的模型（无元数据）")
+                            # 打印模型键（如果是字典）
+                            if isinstance(model_data, dict):
+                                print(f"模型键: {list(model_data.keys())}")
+                            MLStrategy.master_model = model_data
+                            self.model_features = None  # 旧模型没有保存特征列表
+                            self.model = model_data
+                        
+                        print(f"从文件加载主模型: {model_path}")
+                        self.trained = True
                     else:
-                        # 旧格式，直接使用
-                        print(f"加载旧格式的模型（无元数据）")
-                        MLStrategy.master_model = model_data
-                        self.model_features = None  # 旧模型没有保存特征列表
-                        self.model = model_data
-                    
-                    print(f"从文件加载主模型: {MLStrategy.master_model_path}")
-                    self.trained = True
-                else:
-                    print(f"主模型文件不存在: {MLStrategy.master_model_path}，请先训练主模型")
+                        print(f"主模型文件不存在: {model_path}，请先训练主模型")
+                        MLStrategy.master_model = train_master_model(years=10, category=category)
+                        if isinstance(MLStrategy.master_model, dict) and 'features' in MLStrategy.master_model:
+                            self.model_features = MLStrategy.master_model['features']
+                            self.model = MLStrategy.master_model['model']  # 确保使用model键
+                        else:
+                            self.model_features = None
+                            self.model = MLStrategy.master_model  # 旧格式
+                except Exception as e:
+                    print(f"加载主模型时出错: {e}，请先训练主模型")
+                    print(f"错误详情: {traceback.format_exc()}")
                     self.model_features = None
+                    self.model = None
             except Exception as e:
                 print(f"加载主模型时出错: {e}，请先训练主模型")
                 self.model_features = None

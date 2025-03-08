@@ -14,7 +14,7 @@ from sklearn.impute import SimpleImputer
 import time  # 导入time模块用于延迟
 import logging  # 添加日志支持
 # 导入股票分类模块
-from stock_categories import get_sector_features
+from stock_categories import get_recommended_training_set, get_sector_features
 
 # 配置日志
 logging.basicConfig(
@@ -255,7 +255,7 @@ def create_features(data_window, prediction_days=5):
     
     return features
 
-def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl", category=None):
+def train_master_model( years=10, save_path="models/master_model.pkl", category=None):
     """
     训练一个适用于多支股票的主模型
     
@@ -267,6 +267,7 @@ def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl
     返回:
     训练好的模型
     """
+    ticker_list = get_recommended_training_set(category)
     logging.info("开始训练主模型...")
     logging.info(f"使用的股票: {ticker_list}")
     
@@ -835,7 +836,6 @@ def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl
         logging.info(f"模型已保存到 {save_path}")
         
         # 保存历史版本，便于回溯
-        from datetime import datetime
         history_path = save_path.replace('.pkl', f'_{category}.pkl')
         joblib.dump(model_data, history_path)
         logging.info(f"模型历史版本已保存: {history_path}")

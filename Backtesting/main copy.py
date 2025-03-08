@@ -51,7 +51,7 @@ def out_put_result(stats, data):
             print(f"获取交易统计时出错: {e}")
 
 
-def main(ticker, use_master_model=False):
+def main(ticker):
     if ticker in data_map:
         data = data_map[ticker]
     else:
@@ -92,7 +92,7 @@ def main(ticker, use_master_model=False):
         # StrategyTest,
     ]:
         # 设置使用主模型的标志
-        if strategy == MLStrategy and use_master_model:
+        if strategy == MLStrategy:
             MLStrategy.use_master_model = True
         else:
             MLStrategy.use_master_model = False
@@ -174,89 +174,19 @@ if __name__ == "__main__":
     
     # 如果需要训练主模型
     if args.train_model:
-        use_master_model = False
         print("开始训练主模型...")
         print(f"训练股票: {training_stocks}")
-        model = train_master_model(training_stocks, years=args.years, category=args.dataset.upper())
+        model = train_master_model(years=args.years, category=args.dataset.upper())
         if model is not None:
             print("主模型训练成功，将用于回测")
             MLStrategy.master_model = model
-            use_master_model = True
         else:
             print("主模型训练失败")
-            use_master_model = False
-    else:
-        use_master_model = False
-        
-    # 如果是使用主模型，尝试加载
-    if use_master_model and MLStrategy.master_model is None:
-        # 检查模型文件是否存在
-        if os.path.exists(MLStrategy.master_model_path):
-            try:
-                import joblib
-                print(f"尝试从 {MLStrategy.master_model_path} 加载模型...")
-                MLStrategy.master_model = joblib.load(MLStrategy.master_model_path)
-                print(f"已从文件加载主模型: {MLStrategy.master_model_path}")
-                
-                # 测试模型是否可用于预测
-                try:
-                    # 检查模型需要多少特征
-                    feature_count = 32  # 默认特征数
-                    
-                    # 如果模型有feature_names_in_属性，获取确切的特征数
-                    if hasattr(MLStrategy.master_model, 'feature_names_in_'):
-                        feature_count = len(MLStrategy.master_model.feature_names_in_)
-                        print(f"模型需要 {feature_count} 个特征")
-                        
-                    # 如果是Pipeline，可能需要检查其中的特定组件
-                    elif hasattr(MLStrategy.master_model, 'steps'):
-                        for name, step in MLStrategy.master_model.steps:
-                            if hasattr(step, 'feature_names_in_'):
-                                feature_count = len(step.feature_names_in_)
-                                print(f"模型组件 {name} 需要 {feature_count} 个特征")
-                                break
-                    
-                    # 创建一个匹配的测试数据集
-                    import numpy as np
-                    test_X = np.random.rand(1, feature_count)
-                    
-                    # 检查是否有特征名信息文件
-                    features_file = MLStrategy.master_model_path.replace('.pkl', '_features.txt')
-                    feature_names = []
-                    
-                    if os.path.exists(features_file):
-                        with open(features_file, 'r') as f:
-                            feature_names = [line.strip() for line in f.readlines()]
-                        print(f"从文件加载了 {len(feature_names)} 个特征名")
-                        
-                        if len(feature_names) == feature_count:
-                            # 创建带有特征名的测试数据
-                            test_df = pd.DataFrame([np.random.random(feature_count)], 
-                                                 columns=feature_names)
-                            _ = MLStrategy.master_model.predict_proba(test_df)
-                        else:
-                            print(f"特征名数量 ({len(feature_names)}) 与模型期望的特征数 ({feature_count}) 不匹配")
-                            _ = MLStrategy.master_model.predict_proba(test_X)
-                    else:
-                        # 使用简单的numpy数组
-                        _ = MLStrategy.master_model.predict_proba(test_X)
-                    
-                    print("模型测试成功，可以正常预测")
-                except Exception as e:
-                    print(f"模型测试失败，无法预测: {e}")
-                    use_master_model = False
-                    MLStrategy.master_model = None
-            except Exception as e:
-                print(f"加载主模型失败: {e}")
-                use_master_model = False
-        else:
-            print(f"主模型文件不存在: {MLStrategy.master_model_path}")
-            use_master_model = False
 
     sum_map = {}
     for ticker in test_stocks:
         print(f"\n回测股票: {ticker}")
-        main(ticker, use_master_model=use_master_model)
+        main(ticker)
     
     print(f"\n\n\n各策略回测结果汇总:")
     for key in sum_map:
