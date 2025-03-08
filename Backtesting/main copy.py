@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import os
 import argparse
 
-from long_only_strategy import LongOnlyStrategy
+# from long_only_strategy import LongOnlyStrategy
 # from improved_long_only_strategy import ImprovedLongOnlyStrategy
 # from stop_loss_strategy import StopLossStrategy
 # from multiIndicator_strategy import MultiIndicatorStrategy
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         print(f"使用推荐的 {args.dataset} 数据集进行训练")
         training_stocks = get_recommended_training_set(args.dataset.upper())
         # 测试使用自定义的中国股票
-        test_stocks = custom_stocks[args.dataset.upper()]
+        test_stocks = get_recommended_training_set(args.dataset.upper())
     else:
         # 使用自定义股票集
         print("使用自定义股票列表进行训练")
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         use_master_model = False
         print("开始训练主模型...")
         print(f"训练股票: {training_stocks}")
-        model = train_master_model(training_stocks, years=args.years)
+        model = train_master_model(training_stocks, years=args.years, category=args.dataset.upper())
         if model is not None:
             print("主模型训练成功，将用于回测")
             MLStrategy.master_model = model

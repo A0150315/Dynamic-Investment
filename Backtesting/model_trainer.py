@@ -6,17 +6,15 @@ import datetime as dt
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-from sklearn.feature_selection import SelectFromModel, RFE
+from sklearn.feature_selection import SelectFromModel
 import talib as ta
 import joblib
 import os
 from sklearn.impute import SimpleImputer
 import time  # 导入time模块用于延迟
 import logging  # 添加日志支持
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 # 导入股票分类模块
-from stock_categories import get_stock_type, get_sector_features
+from stock_categories import get_sector_features
 
 # 配置日志
 logging.basicConfig(
@@ -257,7 +255,7 @@ def create_features(data_window, prediction_days=5):
     
     return features
 
-def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl"):
+def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl", category=None):
     """
     训练一个适用于多支股票的主模型
     
@@ -838,8 +836,7 @@ def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl
         
         # 保存历史版本，便于回溯
         from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        history_path = save_path.replace('.pkl', f'_v{timestamp}.pkl')
+        history_path = save_path.replace('.pkl', f'_{category}.pkl')
         joblib.dump(model_data, history_path)
         logging.info(f"模型历史版本已保存: {history_path}")
         
@@ -855,43 +852,6 @@ def train_master_model(ticker_list, years=10, save_path="models/master_model.pkl
         sample_data = X_train.iloc[:1].copy()
         sample_data.to_csv(sample_file)
         logging.info(f"样本数据已保存到 {sample_file}")
-        
-        # 保存实时交易所需的轻量级预处理函数
-        realtime_file = save_path.replace('.pkl', '_realtime.py')
-        with open(realtime_file, 'w') as f:
-            f.write(f"""# 自动生成的实时交易特征工程代码 - {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-import pandas as pd
-import numpy as np
-import talib
-
-def preprocess_for_prediction(data):
-    \"\"\"
-    为实时交易准备特征数据
-    参数:
-    data: 包含OHLCV数据的DataFrame，至少需要{model_data['feature_engineering']['min_window']}天的历史数据
-    
-    返回:
-    处理好的特征DataFrame，可直接用于模型预测
-    \"\"\"
-    # 检查数据长度
-    if len(data) < {model_data['feature_engineering']['min_window']}:
-        raise ValueError(f"数据长度不足，需要至少{{model_data['feature_engineering']['min_window']}}天的历史数据")
-    
-    # 创建特征
-    features = pd.DataFrame(index=[data.index[-1]])  # 只保留最新的一行用于预测
-    
-    # 这里是自动生成的特征工程代码，与模型训练时完全一致
-    # ... 特征工程代码 ... 
-    
-    # 返回处理后的特征，确保特征顺序与训练时一致
-    required_features = {actual_feature_names}
-    missing_features = [f for f in required_features if f not in features.columns]
-    if missing_features:
-        raise ValueError(f"缺少必要特征: {{missing_features}}")
-    
-    return features[required_features]
-""")
-        logging.info(f"实时交易预处理代码已保存到 {realtime_file}")
         
     except Exception as e:
         logging.error(f"保存模型时出错: {str(e)}")

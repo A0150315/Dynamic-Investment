@@ -11,7 +11,7 @@
             "args": []
         },
         {
-            "name": "训练+回测(混合优化集)",
+            "name": "训练(混合优化集)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -24,7 +24,7 @@
             ]
         },
         {
-            "name": "训练+回测(美国科技股)",
+            "name": "训练(美国科技股)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -37,7 +37,7 @@
             ]
         },
         {
-            "name": "训练+回测(中国股票)",
+            "name": "训练(中国股票)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -50,7 +50,7 @@
             ]
         },
         {
-            "name": "训练+回测(中国专注集)",
+            "name": "训练(中国专注集)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -63,7 +63,7 @@
             ]
         },
         {
-            "name": "训练+回测(科技专注集)",
+            "name": "训练(科技专注集)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -76,7 +76,7 @@
             ]
         },
         {
-            "name": "训练+回测(全球平衡集)",
+            "name": "训练(全球平衡集)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -89,7 +89,7 @@
             ]
         },
         {
-            "name": "训练+回测(中国科技股)",
+            "name": "训练(中国科技股)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -102,7 +102,7 @@
             ]
         },
         {
-            "name": "训练+回测(中国消费股)",
+            "name": "训练(中国消费股)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -115,7 +115,7 @@
             ]
         },
         {
-            "name": "训练+回测(美国金融股)",
+            "name": "训练(美国金融股)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -128,7 +128,7 @@
             ]
         },
         {
-            "name": "训练+回测(美国医疗股)",
+            "name": "训练(美国医疗股)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -141,7 +141,7 @@
             ]
         },
         {
-            "name": "训练+回测(美国消费股)",
+            "name": "训练(美国消费股)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -154,7 +154,7 @@
             ]
         },
         {
-            "name": "训练+回测(5年数据)",
+            "name": "训练(5年数据)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",
@@ -169,7 +169,7 @@
             ]
         },
         {
-            "name": "训练+回测(10年数据)",
+            "name": "训练(10年数据)+回测",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/Backtesting/main copy.py",

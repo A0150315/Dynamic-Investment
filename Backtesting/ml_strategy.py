@@ -7,8 +7,6 @@ import os
 import logging
 import yfinance as yf
 from datetime import datetime
-# 导入股票分类模块
-from stock_categories import get_stock_type, get_sector_features
 
 class MLStrategy(Strategy):
     """
