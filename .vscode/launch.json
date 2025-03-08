@@ -200,6 +200,30 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": []
+        },
+        {
+            "name": "混合优化集回测中国股票(不训练)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--dataset",
+                "CHINA"
+            ]
+        },
+        {
+            "name": "中国专注集回测中国股票(不训练)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--dataset",
+                "CHINA_FOCUSED"
+            ]
         }
     ],
     "compounds": [
