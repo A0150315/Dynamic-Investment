@@ -1,0 +1,107 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "回测(不训练模型)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": []
+        },
+        {
+            "name": "训练+回测(混合优化集)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "MIXED_OPTIMAL"
+            ]
+        },
+        {
+            "name": "训练+回测(美国科技股)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "US_TECH"
+            ]
+        },
+        {
+            "name": "训练+回测(中国股票)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "CHINA"
+            ]
+        },
+        {
+            "name": "训练+回测(5年数据)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "MIXED_OPTIMAL",
+                "--years",
+                "5"
+            ]
+        },
+        {
+            "name": "训练+回测(10年数据)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/main copy.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--train-model",
+                "--dataset",
+                "MIXED_OPTIMAL",
+                "--years",
+                "10"
+            ]
+        },
+        {
+            "name": "模型训练器-单独运行",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/model_trainer.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": []
+        },
+        {
+            "name": "测试股票分类模块",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Backtesting/stock_categories.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": []
+        }
+    ],
+    "compounds": [
+        {
+            "name": "训练然后回测",
+            "configurations": ["模型训练器-单独运行", "回测(不训练模型)"]
+        }
+    ]
+} 
