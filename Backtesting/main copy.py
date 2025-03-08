@@ -4,11 +4,11 @@ import pandas as pd
 from datetime import date, timedelta
 
 from long_only_strategy import LongOnlyStrategy
-from improved_long_only_strategy import ImprovedLongOnlyStrategy
-from stop_loss_strategy import StopLossStrategy
-from multiIndicator_strategy import MultiIndicatorStrategy
-from strategy_test import StrategyTest
-from mean_reversion_with_rsi import MeanReversionWithRSI
+# from improved_long_only_strategy import ImprovedLongOnlyStrategy
+# from stop_loss_strategy import StopLossStrategy
+# from multiIndicator_strategy import MultiIndicatorStrategy
+# from strategy_test import StrategyTest
+# from mean_reversion_with_rsi import MeanReversionWithRSI
 
 data_map = {}
 
@@ -116,18 +116,17 @@ def main(ticker):
 
 if __name__ == "__main__":
     list1 = [
-        "INTC",
-        "WBA",
-        "KHC",
-        "M",
-        "AAL",
-        "NCLH",
-        "PARA",
-        "SLB",
-        "BIIB",
+        "BIDU",
+        "JD",
         "NTES",
+        "PDD",
+        "BILI",
+        "TCEHY",
+        "BABA",
     ]
     list2 = [
+        "MMM",
+        "INTC",
         "AMD",
         "MCD",
         "AAPL",
@@ -136,11 +135,11 @@ if __name__ == "__main__":
         "GOOG",
         "META",
         "QQQ",
+        "SPY",
         "MSFT",
         "AMZN",
         "NVDA",
         "QCOM",
-        "BABA",
     ]
 
     # for ticker in list1:
