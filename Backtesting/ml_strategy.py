@@ -10,7 +10,7 @@ from datetime import datetime
 import traceback
 
 from model_trainer import train_master_model
-from stock_categories import get_stock_type
+from stock_categories import get_stock_type, get_sector_features
 
 class MLStrategy(Strategy):
     """
@@ -353,27 +353,21 @@ class MLStrategy(Strategy):
         if hasattr(MLStrategy, 'ticker') and MLStrategy.ticker is not None:
             ticker = MLStrategy.ticker
             
-            # 初始化所有类型为0
-            features['is_tech'] = 0
-            features['is_china'] = 0
-            features['is_etf'] = 0
-            features['is_index'] = 0
+            # 使用stock_categories模块中的get_sector_features函数获取股票类型特征
+            sector_features = get_sector_features(ticker)
             
-            # 根据股票代码设置对应类型
-            if '^' in ticker:
-                features['is_index'] = 1
-            elif ticker in ['QQQ', 'SPY', 'DIA', 'IWM', 'VGT']:
-                features['is_etf'] = 1
-            elif ticker in ['AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC']:
-                features['is_tech'] = 1
-            elif ticker in ['BABA', 'JD', 'BIDU', 'PDD', 'NTES', 'BILI', 'TCEHY']:
-                features['is_china'] = 1
+            # 将获取的特征添加到features中
+            for feature_name, value in sector_features.items():
+                features[feature_name] = value
         else:
             # 如果没有ticker信息，全部设为0
             features['is_tech'] = 0
             features['is_china'] = 0
             features['is_etf'] = 0
             features['is_index'] = 0
+            features['is_finance'] = 0
+            features['is_healthcare'] = 0
+            features['is_consumer'] = 0
         
         # 目标变量：未来n天是否上涨
         prediction_days = self.prediction_days
