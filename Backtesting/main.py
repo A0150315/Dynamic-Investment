@@ -182,7 +182,7 @@ def main(ticker, end_date=None):
             
         print(f"\n############################回测策略: {strategy.__name__} - {ticker}")
         strategy.ticker = ticker
-        bt = Backtest(data, strategy, cash=1000, commission=0.0015)
+        bt = Backtest(data, strategy, cash=2000, commission=0.0015)
         stats = bt.run()
 
         # 保存HTML文件，文件名包含ticker和策略名称
