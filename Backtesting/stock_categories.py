@@ -7,7 +7,8 @@ TECH_STOCKS = [
     'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'META', 'NVDA', 
     'TSLA', 'AMD', 'INTC', 'AVGO', 'QCOM', 'CSCO', 'ORCL', 
     'IBM', 'CRM', 'ADBE', 'NFLX', 'PYPL', 'INTC', 'AMAT',
-    'MU', 'TXN', 'UBER', 'ABNB', 'SNOW', 'ZM', 'PLTR', "SPOTY"
+    'MU', 'TXN', 'UBER', 'ABNB', 'SNOW', 'ZM', 'PLTR', "SPOT",
+    "TSM"
 ]
 
 CHINA_STOCKS = [
@@ -40,7 +41,7 @@ HEALTHCARE_STOCKS = [
 
 CONSUMER_STOCKS = [
     'KO', 'PEP', 'PG', 'WMT', 'COST', 'HD', 'MCD', 'SBUX', 
-    'NKE', 'DIS', 'NFLX', 'AMZN', 'BABA', 'JD', 'TGT', "SPOTY"
+    'NKE', 'DIS', 'NFLX', 'AMZN', 'BABA', 'JD', 'TGT', "SPOT"
 ]
 
 # 行业分类映射
@@ -84,8 +85,8 @@ RECOMMENDED_TRAINING_STOCKS = {
     
     'MY': [
         'AAPL', 'MSFT', 'AMZN', 'GOOG', 'META', 'NVDA', 
-        'INTC', 'ADBE', 'NFLX', "TSLA", "TSM", "AMD", "MCD","SPOTY",
-        "NTES", "TCEHY", "BABA", "BIDU"
+        'INTC', 'ADBE', 'NFLX', "TSLA", "TSM", "AMD", "MCD","SPOT",
+        "NTES", "TCEHY", "BABA", "BIDU","SPY","QQQ"
     ],
 
     'US_LARGE_CAP': [
@@ -162,7 +163,7 @@ RECOMMENDED_TRAINING_STOCKS = {
     'TECH_FOCUSED': [
         # 美国科技
         'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'CRM',
-        'ADBE', 'PYPL', 'NFLX', 'CSCO', 'AVGO', 'QCOM', 'MU', 'AMAT', 'TXN', 'KLAC',"SPOTY",
+        'ADBE', 'PYPL', 'NFLX', 'CSCO', 'AVGO', 'QCOM', 'MU', 'AMAT', 'TXN', 'KLAC',"SPOT",
         # 中国科技
         'BABA', 'JD', 'BIDU', 'PDD', 'TCEHY', 'NTES', 'BILI',
         # 相关ETF

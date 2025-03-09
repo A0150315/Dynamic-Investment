@@ -1,3 +1,4 @@
+import logging
 import yfinance as yf
 from backtesting import Backtest
 import pandas as pd
@@ -20,43 +21,125 @@ data_map = {}
 
 sum_map = {}
 
-def out_put_result(stats, data):
-    if not stats["_trades"].empty:
-        last_trade = stats["_trades"].iloc[-1]
-
-        current_price = data["Close"].iloc[-1]
-        current_ma20 = stats["_strategy"]._indicators[0][-1]
-
-        if current_price > current_ma20:
-            suggestion = "BUY" if not pd.isna(last_trade["ExitTime"]) else "HOLD"
+def out_put_result(data):
+    """
+    根据回测结果和MLStrategy.trade_records，输出第二天的投资建议
+    
+    Args:
+        data: 回测使用的价格数据
+    
+    Returns:
+        None，直接打印投资建议
+    """
+    ticker = MLStrategy.ticker
+    if not ticker or ticker not in MLStrategy.trade_records:
+        print("未找到交易记录，无法提供建议")
+        return
+    
+    # 获取ticker的交易记录
+    record = MLStrategy.trade_records[ticker]
+    last_action = record.get('last_action')
+    
+    # 获取最后一天的日期和价格
+    last_date = data.index[-1]
+    last_price = data.Close[-1]
+    
+    strategy_instance = None
+    # 获取最后一天的预测
+    if hasattr(MLStrategy, 'instance') and MLStrategy.instance:
+        strategy_instance = MLStrategy.instance
+        if hasattr(strategy_instance, 'predictions') and len(strategy_instance.predictions) > 0:
+            last_prediction = strategy_instance.predictions[-1]
+            dynamic_threshold = strategy_instance.dynamic_threshold
         else:
-            suggestion = "SELL" if pd.isna(last_trade["ExitTime"]) else "WAIT"
+            print("未找到预测数据，无法提供建议")
+            return
     else:
-        current_price = data["Close"].iloc[-1]
-        current_ma20 = stats["_strategy"]._indicators[0][-1]
-        suggestion = "BUY" if current_price > current_ma20 else "WAIT"
-        
-    # 如果是ML策略，打印我们自己记录的交易统计
-    if hasattr(stats["_strategy"].__class__, 'get_trade_stats') and stats["_strategy"].__class__.ticker:
-        print("\n我们的交易记录统计:")
+        # 尝试从模型重新获取预测
         try:
-            trade_stats = stats["_strategy"].__class__.get_trade_stats(stats["_strategy"].__class__.ticker)
-            print(f"总交易次数: {trade_stats['total_trades']}")
-            print(f"胜率: {trade_stats['win_rate']*100:.2f}%")
-            print(f"平均收益率: {trade_stats['avg_return']:.2f}%")
-            print(f"最佳交易: {trade_stats['best_trade']:.2f}%")
-            print(f"最差交易: {trade_stats['worst_trade']:.2f}%")
-            print(f"当前持仓数量: {trade_stats['open_positions']}")
+            # 创建临时策略实例进行预测
+            temp_strategy = MLStrategy()
+            strategy_instance = temp_strategy
+            temp_strategy.ticker = ticker
+            temp_strategy.data = data
+            temp_strategy.init()
+            temp_strategy._train_model()
+            
+            # 获取最后一天的预测
+            last_prediction = temp_strategy.predictions[-1]
+            dynamic_threshold = temp_strategy.dynamic_threshold
         except Exception as e:
-            print(f"获取交易统计时出错: {e}")
+            print(f"尝试获取预测时出错: {e}")
+            return
+    
+    # 根据预测值和阈值确定投资建议
+    next_date = last_date + pd.Timedelta(days=1)
+    # 跳过周末
+    while next_date.weekday() > 4:  # 5,6 是周六日
+        next_date = next_date + pd.Timedelta(days=1)
+    
+    print("\n" + "="*50)
+    print(f"当前日期: {last_date.strftime('%Y-%m-%d')} (星期{last_date.weekday()+1})")
+    print(f"下一交易日: {next_date.strftime('%Y-%m-%d')} (星期{next_date.weekday()+1})")
+    print(f"最新收盘价: {last_price:.2f}")
+    print(f"预测值: {last_prediction:.4f}, 阈值: {dynamic_threshold:.2f}")
+    print(f"最后一次操作: {last_action}")
+    
+    print("\n【投资建议】")
+    logging.info(f"{ticker} {last_date.strftime('%Y-%m-%d')}")
+    if last_prediction > dynamic_threshold:
+        logging.info(f"预测上涨")
+        logging.info(f"买入：{strategy_instance.calculate_position_size(last_prediction, last_price, strategy_instance.equity)}股")
+        logging.info(f"加仓：{strategy_instance.calculate_position_size(last_prediction, last_price, strategy_instance.equity*0.3)}股")
+        if last_price > dynamic_threshold+0.05:
+            logging.info(f"当前价格高于阈值，可以加仓")
+
+        if last_action == 'buy':
+            # 已经买入，可以继续持有
+            logging.info(f"建议: 继续持有 (WAIT)")
+            logging.info(f"原因: 预测值 {last_prediction:.4f} > 阈值 {dynamic_threshold:.2f}，预计市场将继续上涨")
+        else:
+            # 还没买入或已经卖出
+            logging.info(f"建议: 买入 (BUY)")
+            logging.info(f"原因: 预测值 {last_prediction:.4f} > 阈值 {dynamic_threshold:.2f}，预计市场将上涨")
+    elif last_prediction < (1 - dynamic_threshold):
+        logging.info(f"预测下跌，有就卖")
+        if last_action == 'sell' or not last_action:
+            # 已经卖出或从未买入
+            logging.info(f"建议: 观望 (WAIT)")
+            logging.info(f"原因: 预测值 {last_prediction:.4f} < 阈值 {1-dynamic_threshold:.2f}，预计市场将下跌，当前无持仓，无需操作")
+        else:
+            # 当前持有
+            logging.info(f"建议: 卖出 (SELL)")
+            logging.info(f"原因: 预测值 {last_prediction:.4f} < 阈值 {1-dynamic_threshold:.2f}，预计市场将下跌")
+    else:
+        logging.info(f"止损：{strategy_instance.stop_loss_pct},卖出")
+        logging.info(f"止盈：{strategy_instance.take_profit_pct}，卖一半")
+        # 观望
+        logging.info(f"建议: 观望 (WAIT)")
+        logging.info(f"原因: 预测值 {last_prediction:.4f} 在不确定区间 [{1-dynamic_threshold:.2f}, {dynamic_threshold:.2f}]，建议持观望态度")
+    
+    logging.info("="*50)
+    
+    # 输出持仓状态
+    if 'open_trades' in record and record['open_trades']:
+        total_shares = sum(size for _, _, size in record['open_trades'])
+        total_cost = sum(price * size for _, price, size in record['open_trades'])
+        avg_price = total_cost / total_shares if total_shares > 0 else 0
+        
+        # 计算当前盈亏
+        if total_shares > 0:
+            profit_pct = (last_price / avg_price - 1) * 100
+            print(f"当前持仓: {total_shares:.0f} 股, 平均买入价: {avg_price:.2f}, "
+                  f"当前盈亏: {profit_pct:.2f}%")
 
 
-def main(ticker):
+def main(ticker, end_date=None):
     if ticker in data_map:
         data = data_map[ticker]
     else:
         # start_date = "2008-01-01"
-        today = date.today()
+        today = date.today() if end_date is None else end_date.date()
         start_date = today - timedelta(days=365 * 5)
         data = yf.download(
             ticker, 
@@ -107,7 +190,7 @@ def main(ticker):
         bt.plot(filename=html_filename)
         print(f"回测结果已保存至：{html_filename}")
         
-        out_put_result(stats, data)
+        out_put_result(data)
         result = (
             stats["_equity_curve"]["Equity"].iloc[-1]
             - stats["_equity_curve"]["Equity"].iloc[0]
@@ -127,62 +210,51 @@ if __name__ == "__main__":
     parser.add_argument("--years", type=int, default=10, help="训练数据的年数")
     parser.add_argument("--dataset", type=str, default="MIXED_OPTIMAL", 
                       help="使用推荐的训练数据集类型: US_LARGE_CAP, US_TECH, CHINA, INDICES, ETF, MIXED_OPTIMAL")
+    parser.add_argument("--ticker", type=str, help="股票代码，例如：AAPL")
+    parser.add_argument("--date", type=str, help="指定日期进行分析 (格式: YYYY-MM-DD)，默认为今天")
     args = parser.parse_args()
-    
-    # 允许自定义股票列表或使用推荐数据集
-    custom_stocks = {
-        "CHINA": [
-            "JD",
-            "NTES",
-            "PDD",
-            "BILI",
-            "TCEHY",
-            "BABA",
-        ],
-        "US": [
-            "MMM",
-            "INTC",
-            "AMD",
-            "MCD",
-            "AAPL",
-            "TSLA",
-            "TSM",
-            "GOOG",
-            "META",
-            "QQQ",
-            "SPY",
-            "MSFT",
-            "AMZN",
-            "NVDA",
-            "QCOM",
-        ]
-    }
-    
-    # 根据参数选择数据集
-    if args.dataset and args.dataset.upper() in ["MY","US_LARGE_CAP", "US_TECH", "CHINA", "INDICES", "ETF", "MIXED_OPTIMAL"]:
-        # 使用推荐的训练数据集
-        print(f"使用推荐的 {args.dataset} 数据集进行训练")
-        test_stocks = get_recommended_training_set(args.dataset.upper())
-    else:
-        # 使用自定义股票集
-        print("使用自定义股票列表进行训练")
-        test_stocks = custom_stocks["MY"]
-    
-    # 如果需要训练主模型
-    if args.train_model:
-        print("开始训练主模型...")
-        model = train_master_model(years=args.years, category=args.dataset.upper())
-        if model is not None:
-            print("主模型训练成功，将用于回测")
-            MLStrategy.master_model = model
-        else:
-            print("主模型训练失败")
 
-    sum_map = {}
-    for ticker in test_stocks:
-        print(f"\n回测股票: {ticker}")
-        main(ticker)
-    
-    print(f"\n\n\n各策略回测结果汇总:")
-    for key in sum_map:
-        print(f"{key} : {sum_map[key]}")
+    # 可选: 训练主模型
+    if args.train_model:
+        # 使用推荐的训练集
+        if args.dataset in ["US_LARGE_CAP", "US_TECH", "CHINA", "INDICES", "ETF", "MIXED_OPTIMAL"]:
+            training_tickers = get_recommended_training_set(args.dataset, years=args.years)
+        else:
+            # 使用默认混合数据集
+            training_tickers = get_recommended_training_set("MIXED_OPTIMAL", years=args.years)
+            
+        print(f"使用 {len(training_tickers)} 只股票训练主模型...")
+        train_master_model(training_tickers, years=args.years)
+
+    # 如果提供了特定的股票代码，则使用它
+    if args.ticker:
+        tickers_to_test = [args.ticker]
+    elif args.dataset is not None:
+        tickers_to_test = get_recommended_training_set(args.dataset.upper())
+
+    # 如果提供了特定日期，则设置结束日期
+    if args.date:
+        try:
+            end_date = pd.to_datetime(args.date)
+            print(f"分析截止到 {end_date.strftime('%Y-%m-%d')} 的数据")
+        except:
+            end_date = pd.to_datetime('today')
+            print(f"日期格式无效，使用今天 {end_date.strftime('%Y-%m-%d')} 作为结束日期")
+    else:
+        end_date = pd.to_datetime('today')
+        print(f"使用今天 {end_date.strftime('%Y-%m-%d')} 作为结束日期")
+
+    for ticker in tickers_to_test:
+        try:
+            print(f"\n处理股票: {ticker}")
+            main(ticker, end_date)
+        except Exception as e:
+            print(f"处理 {ticker} 时出错: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # 打印总结果
+    print("\n================= 总结 =================")
+    for strategy, total_return in sum_map.items():
+        print(f"{strategy}: 总收益 = {total_return:.2f}")
+    print("=========================================")

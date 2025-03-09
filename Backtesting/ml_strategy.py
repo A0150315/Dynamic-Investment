@@ -21,7 +21,7 @@ class MLStrategy(Strategy):
     # 定义策略参数
     window = 20            # 特征窗口大小
     n_train_days = 252 * 3  # 训练数据量（约3年）
-    prediction_threshold = 0.52  # 降低预测置信度阈值，使更容易产生交易信号
+    prediction_threshold = 0.55  # 降低预测置信度阈值，使更容易产生交易信号
     prediction_days = 5    # 预测未来n天的价格走势
     
     # 风险管理参数
@@ -39,11 +39,20 @@ class MLStrategy(Strategy):
     # 交易记录存储
     trade_records = {}  # 按ticker存储交易记录的类变量
     
+    # 存储当前实例，方便外部访问
+    instance = None
+    
     def init(self):
         """
-        初始化策略，生成指标，准备机器学习模型
+        策略初始化
         """
-        # 初始化交易结果记录
+        # 保存当前实例到类变量，方便外部访问
+        MLStrategy.instance = self
+        
+        # 为随机数生成器设置固定种子，确保结果可重复
+        np.random.seed(42)
+        
+        # 初始化策略，生成指标，准备机器学习模型
         self.trade_results = []
         self._prev_entry_price = None
         self._prev_position = False
@@ -403,69 +412,69 @@ class MLStrategy(Strategy):
         """
         加载预训练模型
         """
-        if MLStrategy.master_model is not None:
-            # 检查是否为字典格式
-            if isinstance(MLStrategy.master_model, dict) and 'model' in MLStrategy.master_model:
-                print("使用已加载的主模型（字典格式）")
-                self.model = MLStrategy.master_model['model']  # 使用'model'键中的实际模型
-                self.model_features = MLStrategy.master_model['features']
-            else:
-                print("使用已加载的主模型（普通格式）")
-                self.model = MLStrategy.master_model
-            self.trained = True
-        else:
-            # 尝试从文件加载
+        # if MLStrategy.master_model is not None:
+        #     # 检查是否为字典格式
+        #     if isinstance(MLStrategy.master_model, dict) and 'model' in MLStrategy.master_model:
+        #         print("使用已加载的主模型（字典格式）")
+        #         self.model = MLStrategy.master_model['model']  # 使用'model'键中的实际模型
+        #         self.model_features = MLStrategy.master_model['features']
+        #     else:
+        #         print("使用已加载的主模型（普通格式）")
+        #         self.model = MLStrategy.master_model
+        #     self.trained = True
+        # else:
+        # 尝试从文件加载
+        try:
+            category = get_stock_type(self.ticker).upper()
+            model_path = MLStrategy.master_model_path.replace('.pkl', f'_{category}.pkl')
+            
             try:
-                category = get_stock_type(self.ticker).upper()
-                model_path = MLStrategy.master_model_path.replace('.pkl', f'_{category}.pkl')
-                
-                try:
-                    # 尝试加载主模型
-                    if os.path.exists(model_path):
-                        print(f"尝试从文件加载主模型: {model_path}")
-                        model_data = joblib.load(model_path)
-                        
-                        # 检查模型格式
-                        # 打印模型数据类型，帮助调试
-                        print(f"模型数据类型: {type(model_data)}")
-                        
-                        # 如果是字典并包含features和model，则为新格式
-                        if isinstance(model_data, dict) and 'features' in model_data and 'model' in model_data:
-                            print(f"加载新格式的模型（含元数据）")
-                            MLStrategy.master_model = model_data  # 保存整个字典
-                            self.model_features = model_data['features']
-                            print(f"模型训练日期: {model_data.get('training_date', '未知')}")
-                            print(f"模型使用的特征数: {len(self.model_features)}")
-                            self.model = model_data['model']  # 保存实际的模型对象而非整个字典
-                        else:
-                            # 旧格式，直接使用
-                            print(f"加载旧格式的模型（无元数据）")
-                            # 打印模型键（如果是字典）
-                            if isinstance(model_data, dict):
-                                print(f"模型键: {list(model_data.keys())}")
-                            MLStrategy.master_model = model_data
-                            self.model_features = None  # 旧模型没有保存特征列表
-                            self.model = model_data
-                        
-                        print(f"从文件加载主模型: {model_path}")
-                        self.trained = True
+                # 尝试加载主模型
+                if os.path.exists(model_path):
+                    print(f"尝试从文件加载主模型: {model_path}")
+                    model_data = joblib.load(model_path)
+                    
+                    # 检查模型格式
+                    # 打印模型数据类型，帮助调试
+                    print(f"模型数据类型: {type(model_data)}")
+                    
+                    # 如果是字典并包含features和model，则为新格式
+                    if isinstance(model_data, dict) and 'features' in model_data and 'model' in model_data:
+                        print(f"加载新格式的模型（含元数据）")
+                        MLStrategy.master_model = model_data  # 保存整个字典
+                        self.model_features = model_data['features']
+                        print(f"模型训练日期: {model_data.get('training_date', '未知')}")
+                        print(f"模型使用的特征数: {len(self.model_features)}")
+                        self.model = model_data['model']  # 保存实际的模型对象而非整个字典
                     else:
-                        print(f"主模型文件不存在: {model_path}，请先训练主模型")
-                        MLStrategy.master_model = train_master_model(years=10, category=category)
-                        if isinstance(MLStrategy.master_model, dict) and 'features' in MLStrategy.master_model:
-                            self.model_features = MLStrategy.master_model['features']
-                            self.model = MLStrategy.master_model['model']  # 确保使用model键
-                        else:
-                            self.model_features = None
-                            self.model = MLStrategy.master_model  # 旧格式
-                except Exception as e:
-                    print(f"加载主模型时出错: {e}，请先训练主模型")
-                    print(f"错误详情: {traceback.format_exc()}")
-                    self.model_features = None
-                    self.model = None
+                        # 旧格式，直接使用
+                        print(f"加载旧格式的模型（无元数据）")
+                        # 打印模型键（如果是字典）
+                        if isinstance(model_data, dict):
+                            print(f"模型键: {list(model_data.keys())}")
+                        MLStrategy.master_model = model_data
+                        self.model_features = None  # 旧模型没有保存特征列表
+                        self.model = model_data
+                    
+                    print(f"从文件加载主模型: {model_path}")
+                    self.trained = True
+                else:
+                    print(f"主模型文件不存在: {model_path}，请先训练主模型")
+                    MLStrategy.master_model = train_master_model(years=10, category=category)
+                    if isinstance(MLStrategy.master_model, dict) and 'features' in MLStrategy.master_model:
+                        self.model_features = MLStrategy.master_model['features']
+                        self.model = MLStrategy.master_model['model']  # 确保使用model键
+                    else:
+                        self.model_features = None
+                        self.model = MLStrategy.master_model  # 旧格式
             except Exception as e:
                 print(f"加载主模型时出错: {e}，请先训练主模型")
+                print(f"错误详情: {traceback.format_exc()}")
                 self.model_features = None
+                self.model = None
+        except Exception as e:
+            print(f"加载主模型时出错: {e}，请先训练主模型")
+            self.model_features = None
         
         print("开始为所有数据生成预测...")
         
@@ -663,6 +672,33 @@ class MLStrategy(Strategy):
         
         return features_df
     
+    # 定义仓位大小计算函数
+    def calculate_position_size(self, prediction,current_price, equity):
+        """
+        根据预测概率和当前资产计算仓位大小
+        """
+        # 防御性检查
+        if equity <= 0 or current_price <= 0:
+            return 0
+    
+        # 信心基础比例 - 预测概率越高，使用的资金比例越大
+        confidence = min(1.0, max(0, prediction - 0.5))  # 将预测值转换为0-0.5的置信度
+        base_ratio = confidence * self.position_scaling  
+        base_ratio = min(1.0, max(0, base_ratio))  # 再次确保在0-1之间
+        
+        # 计算目标资金比例
+        target_equity_ratio = base_ratio * self.max_position_pct
+        
+        # 计算实际金额和股数
+        position_value = equity * target_equity_ratio
+        shares = int(position_value / current_price)
+        
+        # 确保不超过可用资金
+        if shares * current_price > equity:
+            shares = int(equity / current_price)
+        
+        return max(0, shares)  # 确保不会返回负数
+
     def next(self):
         """
         交易逻辑：根据机器学习模型的预测进行交易
@@ -782,35 +818,6 @@ class MLStrategy(Strategy):
                     print(f"当前持仓: {self.position.size} 股, "
                           f"当前收益: {position_return*100:.2f}%")
         
-        # ===== 改进的交易逻辑 =====
-        
-        # 定义仓位大小计算函数
-        def calculate_position_size(prediction, equity):
-            """
-            根据预测概率和当前资产计算仓位大小
-            """
-            # 防御性检查
-            if equity <= 0 or current_price <= 0:
-                return 0
-        
-            # 信心基础比例 - 预测概率越高，使用的资金比例越大
-            confidence = min(1.0, max(0, prediction - 0.5))  # 将预测值转换为0-0.5的置信度
-            base_ratio = confidence * self.position_scaling  
-            base_ratio = min(1.0, max(0, base_ratio))  # 再次确保在0-1之间
-            
-            # 计算目标资金比例
-            target_equity_ratio = base_ratio * self.max_position_pct
-            
-            # 计算实际金额和股数
-            position_value = equity * target_equity_ratio
-            shares = int(position_value / current_price)
-            
-            # 确保不超过可用资金
-            if shares * current_price > equity:
-                shares = int(equity / current_price)
-            
-            return max(0, shares)  # 确保不会返回负数
-        
         # === 简化交易逻辑以增加交易频率 ===
         
         # 直接根据预测值和阈值做决策，减少其他条件限制
@@ -818,14 +825,14 @@ class MLStrategy(Strategy):
             # 预测上涨，有买入信号
             if not self.position:
                 # 没有持仓，开仓
-                position_size = calculate_position_size(current_prediction, self.equity)
+                position_size = self.calculate_position_size(current_prediction,current_price, self.equity)
                 if position_size > 0:
                     self.safe_buy(size=position_size)
                     print(f"买入: {self.data.index[current_idx]}, 价格: {current_price:.2f}, "
                           f"预测: {current_prediction:.4f}, 阈值: {self.dynamic_threshold:.2f}, 买入: {position_size}股")
             elif current_prediction > self.dynamic_threshold + 0.05:
                 # 已有仓位但预测非常强烈，考虑加仓
-                additional_size = calculate_position_size(current_prediction, self.equity * 0.3)  # 只使用剩余资金的30%
+                additional_size = self.calculate_position_size(current_prediction,current_price, self.equity * 0.3)  # 只使用剩余资金的30%
                 if additional_size > 0:
                     self.safe_buy(size=additional_size)
                     print(f"加仓: {self.data.index[current_idx]}, 价格: {current_price:.2f}, "
@@ -911,6 +918,34 @@ class MLStrategy(Strategy):
             print(f"检测市场状态时出错: {e}，返回中性市场状态")
             return 'neutral'
     
+    def _calculate_volatility(self):
+        """
+        计算当前市场的相对波动率
+        返回值为相对于历史平均波动的比率，1表示正常波动，>1表示高波动，<1表示低波动
+        """
+        # 计算最近20天的波动率
+        recent_prices = self.data.Close[-20:]
+        recent_returns = np.diff(recent_prices) / recent_prices[:-1]
+        recent_volatility = np.std(recent_returns)
+        
+        # 计算过去一年(252个交易日)的平均波动率
+        historical_prices = self.data.Close[-252:]
+        historical_returns = np.diff(historical_prices) / historical_prices[:-1]
+        
+        # 使用滚动窗口计算历史上的20天波动率序列
+        rolling_std = []
+        for i in range(len(historical_returns) - 19):
+            window_returns = historical_returns[i:i+20]
+            rolling_std.append(np.std(window_returns))
+        
+        # 计算历史波动率的平均值
+        avg_historical_volatility = np.mean(rolling_std)
+        
+        # 计算当前波动率相对于历史平均的比率
+        relative_volatility = recent_volatility / avg_historical_volatility if avg_historical_volatility > 0 else 1.0
+        
+        return relative_volatility
+    
     def _adjust_threshold(self):
         """
         根据市场状态和历史交易表现动态调整预测阈值
@@ -922,38 +957,74 @@ class MLStrategy(Strategy):
         # 基础阈值
         base_threshold = self.prediction_threshold
         
-        # 根据市场状态调整
-        if current_regime == 'bull':
-            # 牛市降低买入门槛
-            regime_adjustment = -0.07  # 增大降低幅度
-        elif current_regime == 'bear':
-            # 熊市提高买入门槛，但保持较低以确保有交易
-            regime_adjustment = 0.02  # 减小提高幅度
-        else:
-            # 震荡市略微降低门槛以促进交易
-            regime_adjustment = -0.03
-            
+        try:
+            # 根据市场状态调整
+            if current_regime == 'bull':
+                # 牛市降低买入门槛
+                regime_adjustment = -0.07  # 增大降低幅度
+            elif current_regime == 'bear':
+                # 熊市提高买入门槛，但保持较低以确保有交易
+                regime_adjustment = 0.02  # 减小提高幅度
+            else:
+                try:
+                    # 根据震荡程度调整
+                    volatility = self._calculate_volatility()  # 相对波动率
+                    regime_adjustment = -0.03 + (volatility - 1) * 0.01  # 高波动时提高阈值
+                except Exception as e:
+                    print(f"计算波动率时出错: {e}")
+                    regime_adjustment = -0.03
+
+        except Exception as e:
+            print(f"计算市场状态时出错: {e}")
+            regime_adjustment = 0
+
         # 根据最近交易结果调整（如果有）
         performance_adjustment = 0
-        if len(self.trade_results) >= 5:
-            # 计算最近5笔交易的胜率
-            recent_trades = self.trade_results[-5:]
+        # 更复杂的表现评估
+        if len(self.trade_results) >= 10:  # 使用更多的历史记录
+            # 考虑胜率和收益率两个因素
+            recent_trades = self.trade_results[-10:]
             win_rate = sum(1 for r in recent_trades if r > 0) / len(recent_trades)
+            avg_profit = sum(recent_trades) / len(recent_trades)
             
-            # 如果胜率低，提高阈值；如果胜率高，可以降低阈值
+            # 胜率调整
+            win_rate_adj = 0
             if win_rate < 0.4:
-                performance_adjustment = 0.02  # 表现差，提高门槛但幅度较小
-            elif win_rate > 0.6:
-                performance_adjustment = -0.03  # 表现好，适度降低门槛
-        else:
-            # 没有足够交易历史，降低阈值促进交易
-            performance_adjustment = -0.03
-        
+                win_rate_adj = 0.03
+            elif win_rate > 0.7:  # 提高标准
+                win_rate_adj = -0.03
+            
+            # 盈利能力调整
+            profit_adj = 0
+            if avg_profit < -0.01:  # 平均亏损
+                profit_adj = 0.02
+            elif avg_profit > 0.02:  # 平均盈利较好
+                profit_adj = -0.02
+                
+            performance_adjustment = win_rate_adj + profit_adj
+        # 添加市场波动率因素
+        vix_value = self.data.VIX[-1] if hasattr(self.data, 'VIX') else 20  # 默认值或使用实际VIX
+        vix_adjustment = 0
+
+        if vix_value > 30:  # 高波动环境
+            vix_adjustment = 0.03  # 高波动提高阈值，减少交易频率
+        elif vix_value < 15:  # 低波动环境
+            vix_adjustment = -0.02  # 低波动降低阈值，增加交易机会
+
         # 计算调整后的阈值
-        adjusted_threshold = base_threshold + regime_adjustment + performance_adjustment
-        
-        # 确保阈值在合理范围内，降低下限以增加交易机会
-        self.dynamic_threshold = max(0.50, min(0.60, adjusted_threshold))
+        adjusted_threshold = base_threshold + regime_adjustment + performance_adjustment + vix_adjustment
+        # 动态设定阈值范围限制
+        if current_regime == 'bull':
+            min_threshold = 0.48  # 牛市可以降低最小阈值
+            max_threshold = 0.58  # 也降低最大阈值
+        elif current_regime == 'bear':
+            min_threshold = 0.52  # 熊市提高最小阈值
+            max_threshold = 0.65  # 也提高最大阈值
+        else:
+            min_threshold = 0.50  # 震荡市使用标准范围
+            max_threshold = 0.60
+
+        self.dynamic_threshold = max(min_threshold, min(max_threshold, adjusted_threshold))
         
         return self.dynamic_threshold
 
