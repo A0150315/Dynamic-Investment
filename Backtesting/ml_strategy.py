@@ -43,6 +43,11 @@ class MLStrategy(Strategy):
         """
         初始化策略，生成指标，准备机器学习模型
         """
+        # 初始化交易结果记录
+        self.trade_results = []
+        self._prev_entry_price = None
+        self._prev_position = False
+        
         # 计算基本技术指标作为特征
         self.ma20 = self.I(self.SMA, self.data.Close, 20)
         self.ma50 = self.I(self.SMA, self.data.Close, 50)
@@ -62,7 +67,6 @@ class MLStrategy(Strategy):
         self._vix_data = None
         
         # 交易表现跟踪
-        self.trade_results = []       # 记录每笔交易结果
         self.dynamic_threshold = self.prediction_threshold  # 动态调整的阈值
         self.market_regime = None     # 市场状态：bull, bear, neutral
         
@@ -702,13 +706,29 @@ class MLStrategy(Strategy):
         try:
             if current_idx > 0 and hasattr(self, '_prev_position') and self._prev_position and not self.position:
                 # 计算交易收益率
-                if hasattr(self, '_prev_entry_price'):
+                if hasattr(self, '_prev_entry_price') and self._prev_entry_price is not None and self._prev_entry_price > 0:
                     # 使用前一柱的价格作为退出价格
                     exit_price = self.data.Close[-2]
                     trade_return = (exit_price / self._prev_entry_price - 1) * 100
+                    
+                    # 打印详细的调试信息
+                    print(f"交易详情 - 入场价: {self._prev_entry_price:.2f}, 出场价: {exit_price:.2f}, 收益率: {trade_return:.2f}%")
+                    
+                    # 确保trade_results已经初始化
+                    if not hasattr(self, 'trade_results'):
+                        self.trade_results = []
+                    
                     self.trade_results.append(trade_return)
-                    print(f"交易结束: 收益率 {trade_return:.2f}%, 累计交易: {len(self.trade_results)}, "
-                         f"胜率: {sum(1 for r in self.trade_results if r > 0)/max(1, len(self.trade_results)):.2f}")
+                    
+                    # 计算并打印胜率
+                    win_count = sum(1 for r in self.trade_results if r > 0)
+                    total_trades = len(self.trade_results)
+                    win_rate = win_count / max(1, total_trades)
+                    
+                    print(f"交易结束: 收益率 {trade_return:.2f}%, 累计交易: {total_trades}, "
+                         f"胜利: {win_count}/{total_trades}, 胜率: {win_rate:.2f}")
+                else:
+                    print(f"警告: 无法计算收益率，入场价未设置或无效: {getattr(self, '_prev_entry_price', 'N/A')}")
         except Exception as e:
             print(f"记录交易结果时出错: {e}")
         
@@ -716,14 +736,23 @@ class MLStrategy(Strategy):
         try:
             self._prev_position = bool(self.position)
             if self.position:
-                # 使用我们的辅助方法获取入场价格
-                if hasattr(self.position, 'entry_price'):
-                    self._prev_entry_price = self.position.entry_price
-                elif hasattr(self.position, 'open_price'):
-                    self._prev_entry_price = self.position.open_price
+                # 使用我们自己记录的交易数据获取入场价格
+                if hasattr(self, 'my_open_trades') and self.my_open_trades:
+                    # 计算加权平均买入价格
+                    total_cost = sum(price * size for _, price, size in self.my_open_trades)
+                    total_shares = sum(size for _, _, size in self.my_open_trades)
+                    
+                    if total_shares > 0:
+                        self._prev_entry_price = total_cost / total_shares
+                        print(f"从my_open_trades记录中获取加权平均入场价格: {self._prev_entry_price:.2f}")
+                    else:
+                        # 如果没有有效的交易记录，使用当前价格
+                        self._prev_entry_price = current_price
+                        print(f"my_open_trades记录无效，使用当前价格作为入场价格: {self._prev_entry_price:.2f}")
                 else:
-                    # 如果无法获取入场价格，使用当前价格作为近似
+                    # 如果没有my_open_trades记录，使用当前价格
                     self._prev_entry_price = current_price
+                    print(f"无交易记录，使用当前价格作为入场价格: {self._prev_entry_price:.2f}")
         except Exception as e:
             print(f"记录持仓状态时出错: {e}")
             # 确保 _prev_position 至少被设置为 False
