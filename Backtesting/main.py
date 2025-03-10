@@ -21,6 +21,15 @@ data_map = {}
 
 sum_map = {}
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+handler = logging.FileHandler('app.log', encoding='utf-8')  # 指定 UTF-8 编码
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+
 def out_put_result(data):
     """
     根据回测结果和MLStrategy.trade_records，输出第二天的投资建议
