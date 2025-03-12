@@ -85,6 +85,8 @@ class MLStrategy(Strategy):
                 'open_trades': [],      # 当前持有的交易 [(时间, 价格, 数量),...]
                 'closed_trades': [],    # 已平仓的交易 [(买入时间, 买入价格, 数量, 卖出时间, 卖出价格, 收益率),...]
                 'last_action': None,    # 最后一次操作, 'buy' 或 'sell'
+                'last_action_price': None, # 最后一次操作价格
+                'last_action_time': None, # 最后一次操作时间
                 'trade_count': 0        # 总交易次数
             }
         elif MLStrategy.ticker is None:
@@ -1140,6 +1142,8 @@ class MLStrategy(Strategy):
                 if MLStrategy.ticker is not None and MLStrategy.ticker in MLStrategy.trade_records:
                     MLStrategy.trade_records[MLStrategy.ticker]['open_trades'].append(trade_record)
                     MLStrategy.trade_records[MLStrategy.ticker]['last_action'] = 'buy'
+                    MLStrategy.trade_records[MLStrategy.ticker]['last_action_price'] = price_before
+                    MLStrategy.trade_records[MLStrategy.ticker]['last_action_time'] = current_time
                     MLStrategy.trade_records[MLStrategy.ticker]['trade_count'] += 1
                 
                 print(f"记录买入交易: 时间={current_time}, 价格={price_before:.2f}, 数量={actual_size}")
@@ -1248,7 +1252,8 @@ class MLStrategy(Strategy):
                         # 添加到closed_trades
                         MLStrategy.trade_records[MLStrategy.ticker]['closed_trades'].append(closed_trade)
                         MLStrategy.trade_records[MLStrategy.ticker]['last_action'] = 'sell'
-                    
+                        MLStrategy.trade_records[MLStrategy.ticker]['last_action_time'] = current_time
+                        MLStrategy.trade_records[MLStrategy.ticker]['last_action_price'] = price_before
                     print(f"记录卖出交易: 时间={current_time}, 价格={price_before:.2f}, "
                           f"数量={actual_size}, 收益率={profit_pct:.2f}%")
                 

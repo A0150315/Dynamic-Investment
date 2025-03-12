@@ -48,7 +48,8 @@ def out_put_result(data):
     # 获取ticker的交易记录
     record = MLStrategy.trade_records[ticker]
     last_action = record.get('last_action')
-    
+    last_action_time = record.get('last_action_time')
+    last_action_price = record.get('last_action_price')
     # 获取最后一天的日期和价格
     last_date = data.index[-1]
     last_price = data.Close[-1]
@@ -90,27 +91,38 @@ def out_put_result(data):
     print("\n" + "="*50)
     print(f"当前日期: {last_date.strftime('%Y-%m-%d')} (星期{last_date.weekday()+1})")
     print(f"下一交易日: {next_date.strftime('%Y-%m-%d')} (星期{next_date.weekday()+1})")
-    print(f"最新收盘价: {last_price:.2f}")
+    logging.info(f"最新收盘价: {last_price:.2f}")
     print(f"预测值: {last_prediction:.4f}, 阈值: {dynamic_threshold:.2f}")
-    print(f"最后一次操作: {last_action}")
+    logging.info(f"最后一次操作: {last_action},时间: {last_action_time},价格: {last_action_price}")
     
     print("\n【投资建议】")
     logging.info(f"{ticker} {last_date.strftime('%Y-%m-%d')}")
     if last_prediction > dynamic_threshold:
         logging.info(f"预测上涨")
-        logging.info(f"买入：{strategy_instance.calculate_position_size(last_prediction, last_price, strategy_instance.equity)}股")
-        logging.info(f"加仓：{strategy_instance.calculate_position_size(last_prediction, last_price, strategy_instance.equity*0.3)}股")
-        if last_price > dynamic_threshold+0.05:
-            logging.info(f"当前价格高于阈值，可以加仓")
+        buy_size = strategy_instance.calculate_position_size(last_prediction, last_price, strategy_instance.equity)
+        if buy_size > 0:
+            logging.info(f"买入：{buy_size}股")
+            
+        add_size = strategy_instance.calculate_position_size(last_prediction, last_price, strategy_instance.equity*0.3)
+        if add_size > 0:
+            logging.info(f"加仓：{add_size}股")
 
         if last_action == 'buy':
-            # 已经买入，可以继续持有
-            logging.info(f"建议: 继续持有 (WAIT)")
+            if last_price > dynamic_threshold+0.05 and add_size > 0:
+                logging.info(f"建议：当前价格高于阈值，可以加仓")
+                logging.info(f"加仓：{add_size}股")
+            else:
+                # 已经买入，可以继续持有
+                logging.info(f"建议: 继续持有 (WAIT)")
             logging.info(f"原因: 预测值 {last_prediction:.4f} > 阈值 {dynamic_threshold:.2f}，预计市场将继续上涨")
-        else:
+        elif buy_size > 0:
             # 还没买入或已经卖出
             logging.info(f"建议: 买入 (BUY)")
+            logging.info(f"买入：{buy_size}股")
             logging.info(f"原因: 预测值 {last_prediction:.4f} > 阈值 {dynamic_threshold:.2f}，预计市场将上涨")
+        else:
+            logging.info(f"建议: 观望 (WAIT)")
+            logging.info(f"原因: 预测值 {last_prediction:.4f} > 阈值 {dynamic_threshold:.2f}，预计市场将上涨，当前无持仓，无需操作")
     elif last_prediction < (1 - dynamic_threshold):
         logging.info(f"预测下跌，有就卖")
         if last_action == 'sell' or not last_action:
@@ -196,7 +208,7 @@ def main(ticker, end_date=None):
 
         # 保存HTML文件，文件名包含ticker和策略名称
         html_filename = f"{output_dir}/{ticker}_{strategy.__name__}.html"
-        bt.plot(filename=html_filename)
+        # bt.plot(filename=html_filename)
         print(f"回测结果已保存至：{html_filename}")
         
         out_put_result(data)
