@@ -24,7 +24,8 @@ sum_map = {}
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-handler = logging.FileHandler('app.log', encoding='utf-8')  # 指定 UTF-8 编码
+today = date.today()
+handler = logging.FileHandler(f'{today.strftime("%Y-%m-%d")}.log', encoding='utf-8')
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 
@@ -279,3 +280,13 @@ if __name__ == "__main__":
     for strategy, total_return in sum_map.items():
         print(f"{strategy}: 总收益 = {total_return:.2f}")
     print("=========================================")
+
+    import time
+    time.sleep(5)  # 等待日志写入完成
+
+    try:
+        from log_mailer import send_log_by_email
+        log_file_path = f"{today.strftime('%Y-%m-%d')}.log"
+        send_log_by_email(log_file_path, delete_after=True)
+    except Exception as e:
+        print(f"发送日志邮件时出错: {e}")
