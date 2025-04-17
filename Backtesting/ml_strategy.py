@@ -87,7 +87,8 @@ class MLStrategy(Strategy):
                 'last_action': None,    # 最后一次操作, 'buy' 或 'sell'
                 'last_action_price': None, # 最后一次操作价格
                 'last_action_time': None, # 最后一次操作时间
-                'trade_count': 0        # 总交易次数
+                'trade_count': 0,        # 总交易次数
+                'action_log': []         # 记录所有买卖操作的日志 [('buy'/'sell', time, price, size), ...]
             }
         elif MLStrategy.ticker is None:
             print("警告: ticker为None，无法初始化交易记录")
@@ -1145,6 +1146,7 @@ class MLStrategy(Strategy):
                     MLStrategy.trade_records[MLStrategy.ticker]['last_action_price'] = price_before
                     MLStrategy.trade_records[MLStrategy.ticker]['last_action_time'] = current_time
                     MLStrategy.trade_records[MLStrategy.ticker]['trade_count'] += 1
+                    MLStrategy.trade_records[MLStrategy.ticker]['action_log'].append(('buy', current_time, price_before, actual_size))
                 
                 print(f"记录买入交易: 时间={current_time}, 价格={price_before:.2f}, 数量={actual_size}")
                 return True
@@ -1254,6 +1256,7 @@ class MLStrategy(Strategy):
                         MLStrategy.trade_records[MLStrategy.ticker]['last_action'] = 'sell'
                         MLStrategy.trade_records[MLStrategy.ticker]['last_action_time'] = current_time
                         MLStrategy.trade_records[MLStrategy.ticker]['last_action_price'] = price_before
+                        MLStrategy.trade_records[MLStrategy.ticker]['action_log'].append(('sell', current_time, price_before, actual_size))
                     print(f"记录卖出交易: 时间={current_time}, 价格={price_before:.2f}, "
                           f"数量={actual_size}, 收益率={profit_pct:.2f}%")
                 

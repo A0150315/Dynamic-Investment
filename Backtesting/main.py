@@ -25,8 +25,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 today = date.today()
-handler = logging.FileHandler(f'{today.strftime("%Y-%m-%d")}.log', encoding='utf-8')
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler = logging.FileHandler(f'{today.strftime("%Y-%m-%d")}.log', encoding='gb2312')
+formatter = logging.Formatter('%(message)s')
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
@@ -49,8 +49,10 @@ def out_put_result(data):
     # 获取ticker的交易记录
     record = MLStrategy.trade_records[ticker]
     last_action = record.get('last_action')
+    action_log = record.get('action_log') or []
     last_action_time = record.get('last_action_time')
     last_action_price = record.get('last_action_price')
+
     # 获取最后一天的日期和价格
     last_date = data.index[-1]
     last_price = data.Close[-1]
@@ -95,6 +97,21 @@ def out_put_result(data):
     logging.info(f"最新收盘价: {last_price:.2f}")
     print(f"预测值: {last_prediction:.4f}, 阈值: {dynamic_threshold:.2f}")
     logging.info(f"最后一次操作: {last_action},时间: {last_action_time},价格: {last_action_price}")
+    # 格式化最后10条记录
+    last_10_actions = action_log[-10:]
+    formatted_log_entries = []
+    for i, action_record in enumerate(reversed(last_10_actions)):
+        if len(action_record) >= 4:
+            action_type, time, price, size = action_record
+            entry_str = (f"{len(last_10_actions)-i}. {action_type.upper()} "
+                         f"时间: {time}, "
+                         f"价格: {price:.2f}, "
+                         f"数量: {size}")
+            formatted_log_entries.append(entry_str)
+    log_message = f"\n".join(formatted_log_entries)
+    logging.info(log_message)
+
+
     
     print("\n【投资建议】")
     logging.info(f"{ticker} {last_date.strftime('%Y-%m-%d')}")
