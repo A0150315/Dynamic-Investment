@@ -23,6 +23,7 @@ jobs:
 
     - name: Download, compile, and install TA-Lib C library (v0.4.0)
       run: |
+        # ... (Keep the C library compilation steps exactly as before) ...
         echo "Downloading TA-Lib C library source..."
         wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
         echo "Extracting source..."
@@ -41,16 +42,23 @@ jobs:
 
     - name: Verify TA-Lib C library installation
       run: |
+        # ... (Keep the verification steps exactly as before) ...
         echo "Verifying TA-Lib library files in /usr/lib..."
         ls -l /usr/lib/libta_lib* || (echo "Library file not found in /usr/lib!" && exit 1)
         echo "Verifying TA-Lib header file in /usr/include/ta-lib..."
         ls -l /usr/include/ta-lib/ta_libc.h || (echo "Header file not found in /usr/include/ta-lib!" && exit 1)
 
-    - name: Install Python dependencies (with --no-build-isolation)
+    - name: Install Python Build Dependencies for TA-Lib First
       run: |
         python -m pip install --upgrade pip
+        # Install Cython and NumPy<2 BEFORE attempting to install TA-Lib
+        # This satisfies the [build-system] requirements in TA-Lib's pyproject.toml
+        echo "Installing Cython and NumPy<2..."
+        pip install "cython>=0.29.36" "numpy<2" --verbose
 
-        # 1. 设置环境变量指向手动安装的 C 库路径
+    - name: Install TA-Lib Python Wrapper Separately
+      run: |
+        # Set environment variables again just in case (might not be strictly needed if set globally)
         export TA_INCLUDE_PATH="/usr/include"
         export TA_LIBRARY_PATH="/usr/lib"
         export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
@@ -58,10 +66,16 @@ jobs:
         echo "TA_LIBRARY_PATH=${TA_LIBRARY_PATH}"
         echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
 
-        # 2. 安装 requirements.txt 中的包 (确保 TA-Lib 版本已固定为 0.4.x)
-        #    *** 使用 --no-build-isolation ***
-        echo "Installing requirements from requirements.txt using --no-build-isolation..."
-        pip install --no-build-isolation -r requirements.txt --verbose
+        # Now install TA-Lib using --no-build-isolation
+        # Since build deps (Cython, NumPy) are already installed, this should work
+        echo "Installing TA-Lib==0.4.29 (or your chosen 0.4.x version)..."
+        pip install --no-build-isolation TA-Lib==0.4.29 --verbose # Make sure this matches requirements.txt
+
+    - name: Install Remaining Python Dependencies
+      run: |
+        echo "Installing remaining requirements from requirements.txt..."
+        # Pip will skip numpy and TA-Lib as they are already installed
+        pip install -r requirements.txt --verbose
 
     - name: Run backtest script
       run: python Backtesting/main.py --dataset MY
