@@ -49,15 +49,11 @@ jobs:
     - name: 首先安装 TA-Lib 的 Python 构建依赖
       run: |
         python -m pip install --upgrade pip
-        # 在尝试安装 TA-Lib 之前，安装 Cython, NumPy<2, 以及 wheel 包
-        # 这满足了 TA-Lib pyproject.toml 中的 [build-system] requirements
-        # 并且确保了 bdist_wheel 命令可用
         echo "安装 Cython, NumPy<2, 和 wheel..."
         pip install "cython>=0.29.36" "numpy<2" "wheel" --verbose
 
     - name: 单独安装 TA-Lib Python 包装器
       run: |
-        # 再次设置环境变量以防万一
         export TA_INCLUDE_PATH="/usr/include"
         export TA_LIBRARY_PATH="/usr/lib"
         export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
@@ -65,10 +61,8 @@ jobs:
         echo "TA_LIBRARY_PATH=${TA_LIBRARY_PATH}"
         echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
 
-        # 现在使用 --no-build-isolation 安装 TA-Lib
-        # 因为构建依赖 (Cython, NumPy, wheel) 已经安装，这应该能工作
-        echo "安装 TA-Lib==0.4.29 (或你选择的 0.4.x 版本)..."
-        pip install --no-build-isolation TA-Lib==0.4.29 --verbose # 确保版本与 requirements.txt 一致
+        echo "安装 TA-Lib==0.4.29..."
+        pip install --no-build-isolation TA-Lib==0.4.29 --verbose
 
     - name: 安装剩余的 Python 依赖
       run: |
@@ -78,3 +72,11 @@ jobs:
 
     - name: 运行回测脚本
       run: python Backtesting/main.py --dataset MY
+
+    - name: 上传日志文件作为构建产物
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backtest-log-${{ github.run_id }}
+        path: '*.log'
+        retention-days: 7
