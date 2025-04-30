@@ -1,18 +1,16 @@
 import logging
-import yfinance as yf
 from backtesting import Backtest
 import pandas as pd
 from datetime import date, timedelta
 import os
 import argparse
 
+from data_service import DataService
 from ml_strategy import MLStrategy
 from model_trainer import train_master_model
 
 # 导入股票分类模块
 from stock_categories import get_recommended_training_set
-
-data_map = {}
 
 sum_map = {}
 
@@ -25,6 +23,9 @@ formatter = logging.Formatter("%(message)s")
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
+
+
+data_service = DataService()
 
 
 def out_put_result(data):
@@ -193,27 +194,14 @@ def out_put_result(data):
 
 
 def main(ticker, end_date=None):
-    if ticker in data_map:
-        data = data_map[ticker]
-    else:
-        # start_date = "2008-01-01"
-        today = date.today() if end_date is None else end_date.date()
-        start_date = today - timedelta(days=365 * 5)
-        data = yf.download(
-            ticker,
-            start=start_date,
-            end=today,
-            interval="1d",
-            auto_adjust=True,
-            multi_level_index=False,
-        )
-
-        # 确保数据列是一维的
-        for col in ["Open", "High", "Low", "Close", "Volume"]:
-            if hasattr(data[col], "values") and data[col].values.ndim > 1:
-                data[col] = data[col].values.flatten()
-
-        data_map[ticker] = data
+    # start_date = "2008-01-01"
+    today = date.today() if end_date is None else end_date.date()
+    start_date = today - timedelta(days=365 * 5)
+    data = data_service.get_stock_data(
+        ticker,
+        start_date,
+        today,
+    )
 
     # print(data.head())
     # print(data.isna().sum())
@@ -283,17 +271,13 @@ if __name__ == "__main__":
             "ETF",
             "MIXED_OPTIMAL",
         ]:
-            training_tickers = get_recommended_training_set(
-                args.dataset, years=args.years
-            )
+            training_tickers = get_recommended_training_set(args.dataset)
         else:
             # 使用默认混合数据集
-            training_tickers = get_recommended_training_set(
-                "MIXED_OPTIMAL", years=args.years
-            )
+            training_tickers = get_recommended_training_set("MIXED_OPTIMAL")
 
         print(f"使用 {len(training_tickers)} 只股票训练主模型...")
-        train_master_model(training_tickers, years=args.years)
+        train_master_model(category=args.dataset, years=args.years)
 
     # 如果提供了特定的股票代码，则使用它
     if args.ticker:
