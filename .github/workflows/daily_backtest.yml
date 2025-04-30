@@ -7,7 +7,7 @@ on:
 
 jobs:
   run-backtest:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -18,18 +18,37 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install TA-Lib C library and build dependencies
+    - name: Install build dependencies
+      run: sudo apt-get update && sudo apt-get install -y build-essential wget
+
+    - name: Download and install TA-Lib
       run: |
-        sudo add-apt-repository universe
-        sudo apt-get update
-        sudo apt-get install -y build-essential libta-lib-dev
+        wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+        tar -xzf ta-lib-0.4.0-src.tar.gz
+        cd ta-lib/
+        ./configure --prefix=/usr
+        make
+        sudo make install
+        sudo ldconfig
+        cd ..
+
+    - name: Verify TA-Lib installation
+      run: |
+        ls -l /usr/lib/libta_lib*
+        ls -l /usr/include/ta-lib/ta_libc.h
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        echo "Attempting to install TA-Lib Python wrapper..."
-        pip install TA-Lib
-        pip install -r requirements.txt
+        # Install an older NumPy version FIRST
+        # NumPy 1.26.4 is the last 1.x version, should be compatible
+        pip install "numpy<2"
+        export TA_INCLUDE_PATH="/usr/include"
+        export TA_LIBRARY_PATH="/usr/lib"
+        echo "Attempting to install TA-Lib==0.4.24 with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
+        # Use --no-build-isolation to force using the pre-installed numpy<2
+        pip install --no-build-isolation --no-cache-dir --verbose "TA-Lib==0.4.24"
+        pip install -r requirements.txt # Install other requirements AFTER TA-Lib
 
     - name: Run backtest script
       run: python Backtesting/main.py --dataset MY
