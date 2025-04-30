@@ -23,9 +23,9 @@ jobs:
 
     - name: Download and install TA-Lib
       run: |
-        wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz
-        tar -xzf ta-lib-0.6.4-src.tar.gz
-        cd ta-lib-0.6.4/
+        wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+        tar -xzf ta-lib-0.4.0-src.tar.gz
+        cd ta-lib/
         ./configure --prefix=/usr
         make
         sudo make install
@@ -42,8 +42,9 @@ jobs:
         python -m pip install --upgrade pip
         export TA_INCLUDE_PATH="/usr/include"
         export TA_LIBRARY_PATH="/usr/lib"
-        echo "Installing dependencies from requirements.txt"
-        pip install --no-cache-dir --verbose -r requirements.txt
+        echo "Attempting to install TA-Lib==0.4.24 with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
+        pip install --no-cache-dir --verbose "TA-Lib==0.4.24"
+        pip install -r requirements.txt
 
     - name: Run backtest script
       run: python Backtesting/main.py --dataset MY
