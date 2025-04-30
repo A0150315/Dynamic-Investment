@@ -9,7 +9,7 @@ on:
 jobs:
   run-backtest:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -46,8 +46,7 @@ jobs:
         python -m pip install --upgrade pip
         echo "Attempting to install TA-Lib with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
         # Use the official package name TA-Lib
-        pip install --no-cache-dir --verbose "TA-Lib" # <-- Changed 'talib' to 'TA-Lib' and added --no-cache-dir
-        # Make sure requirements.txt also uses the correct name if TA-Lib is listed there
+        pip install --no-cache-dir --verbose "TA-Lib"
         pip install -r requirements.txt
 
     - name: Run backtest script
