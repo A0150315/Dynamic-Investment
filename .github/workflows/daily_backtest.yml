@@ -61,7 +61,7 @@ jobs:
 
         # 2. 安装 requirements.txt 中的其余包
         echo "Installing remaining requirements..."
-        pip install -r requirements.txt
+        pip install --no-build-isolation -r requirements.txt
 
     - name: Run backtest script
       run: python Backtesting/main.py --dataset MY
