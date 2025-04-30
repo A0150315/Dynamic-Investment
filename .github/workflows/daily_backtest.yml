@@ -1,4 +1,3 @@
-
 name: Daily Backtest MY Dataset
 
 on:
@@ -43,8 +42,8 @@ jobs:
         python -m pip install --upgrade pip
         export TA_INCLUDE_PATH="/usr/include"
         export TA_LIBRARY_PATH="/usr/lib"
-        echo "Attempting to install TA-Lib with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
-        pip install --no-cache-dir --verbose "TA-Lib"
+        echo "Attempting to install TA-Lib==0.4.24 with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
+        pip install --no-cache-dir --verbose "TA-Lib==0.4.24"
         pip install -r requirements.txt
 
     - name: Run backtest script
