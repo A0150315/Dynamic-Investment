@@ -30,6 +30,7 @@
             ./configure --prefix=/usr
             make
             sudo make install
+            sudo ldconfig
             cd ..
 
         - name: Install Python dependencies
