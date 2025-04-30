@@ -5,8 +5,6 @@ import talib as ta  # 添加Ta-Lib库用于计算技术指标
 import joblib
 import os
 import logging
-import yfinance as yf
-from datetime import datetime
 import traceback
 
 from model_trainer import train_master_model
@@ -53,22 +51,30 @@ class MLStrategy(Strategy):
         # 保存当前实例到类变量，方便外部访问
         MLStrategy.instance = self
 
-        self.data_service = DataService()  # 或者从外部传入
+        self.data_service = DataService()
 
-        # 获取整个回测期间的市场和 VIX 数据
-        self.global_start_date = self.data.index.min().date()
-        self.global_end_date = self.data.index.max().date()
+        # 获取整个回测期间的日期范围
+        if self.data is not None and not self.data.index.empty:
+            self.global_start_date = self.data.index.min().date()
+            self.global_end_date = self.data.index.max().date()
 
-        logger.info(
-            "Pre-fetching market and VIX data for the entire backtest period..."
-        )
-        self._market_data_full = self.data_service.get_market_index_data(
-            self.global_start_date, self.global_end_date
-        )
-        self._vix_data_full = self.data_service.get_vix_data(
-            self.global_start_date, self.global_end_date
-        )
-        logger.info("Market and VIX data pre-fetched.")
+            logger.info(
+                "Pre-fetching market (^GSPC) and VIX (^VIX) data for the entire backtest period..."
+            )
+            # Use the data service to get data
+            self._market_data_full = self.data_service.get_market_index_data(
+                self.global_start_date, self.global_end_date
+            )
+            self._vix_data_full = self.data_service.get_vix_data(
+                self.global_start_date, self.global_end_date
+            )
+            logger.info("Market and VIX data pre-fetching complete.")
+        else:
+             logger.warning("self.data.index is empty or None in init. Cannot pre-fetch market/VIX data.")
+             self.global_start_date = None
+             self.global_end_date = None
+             self._market_data_full = None
+             self._vix_data_full = None
 
         # 为随机数生成器设置固定种子，确保结果可重复
         np.random.seed(42)
@@ -91,10 +97,6 @@ class MLStrategy(Strategy):
         self.model = None
         self.predictions = np.ones(len(self.data.Close)) * 0.5  # 默认为0.5
         self.trained = False
-
-        # 初始化市场数据缓存
-        self._market_data = None
-        self._vix_data = None
 
         # 交易表现跟踪
         self.dynamic_threshold = self.prediction_threshold  # 动态调整的阈值
@@ -332,139 +334,63 @@ class MLStrategy(Strategy):
         # 这是解决特征不匹配问题的关键部分
         # 添加与市场指数相关的特征，确保与训练数据特征一致
         try:
-            # 检查是否有全局市场数据，没有则获取
-            if not hasattr(self, "_market_data") or self._market_data is None:
-                # 强制使用当前的真实日期，避免使用未来日期
-                real_today = datetime.now().date()
-                end_date = pd.Timestamp(real_today)
+            # --- Use pre-fetched Market Data ---
+            if self._market_data_full is not None and not self._market_data_full.empty:
+                # Calculate indicators from the full dataset once
+                # Check if these calculations were already done and cached, if performance is an issue
+                # For simplicity now, we recalculate based on the full data
+                market_close = self._market_data_full['Close']
+                market_ma50 = market_close.rolling(50).mean()
+                market_ma200 = market_close.rolling(200).mean()
+                market_trend = (market_ma50 > market_ma200).astype(int)
+                market_returns = market_close.pct_change()
 
-                # 安全地获取起始日期
-                start_date = end_date - pd.Timedelta(days=365 * 5)  # 获取5年数据
-                print(
-                    f"获取市场指数数据，从 {start_date.date()} 到 {end_date.date()}..."
-                )
+                # Align the calculated series to the current features DataFrame index
+                features['market_trend'] = market_trend.reindex(features.index, method='ffill').fillna(0)
+                features['market_returns'] = market_returns.reindex(features.index, method='ffill').fillna(0)
 
-                # 获取S&P 500数据作为市场参考
-                self._market_data = yf.download(
-                    "^GSPC",
-                    start=start_date,
-                    end=end_date,
-                    interval="1d",
-                    progress=False,
-                    auto_adjust=True,
-                )
-
-                # 获取VIX数据
-                try:
-                    self._vix_data = yf.download(
-                        "^VIX",
-                        start=start_date,
-                        end=end_date,
-                        interval="1d",
-                        progress=False,
-                    )
-                except Exception as e:
-                    print(f"下载VIX数据失败: {e}，将使用默认值")
-                    self._vix_data = None
-
-                # 预处理市场数据
-                if self._market_data is not None and len(self._market_data) > 0:
-                    # 计算市场趋势
-                    self._market_ma50 = self._market_data["Close"].rolling(50).mean()
-                    self._market_ma200 = self._market_data["Close"].rolling(200).mean()
-                    self._market_trend = (
-                        self._market_ma50 > self._market_ma200
-                    ).astype(int)
-
-                    # 计算VIX指标
-                    if self._vix_data is not None and len(self._vix_data) > 0:
-                        try:
-                            self._vix_close = self._vix_data["Close"]
-                            self._vix_ma20 = self._vix_close.rolling(20).mean()
-                            self._vix_mean = self._vix_close.mean()
-                            self._vix_ma20_mean = self._vix_ma20.mean()
-                        except Exception as e:
-                            print(f"处理VIX数据时出错: {e}")
-                            self._create_default_vix()
-                    else:
-                        print("VIX数据为空，使用默认值")
-                        self._create_default_vix()
-
-            # 用缓存的市场数据添加特征
-            if hasattr(self, "_market_trend") and self._market_trend is not None:
-                # 使用ffill进行前向填充，可能的会有警告，替换为更现代的方法
-                features["market_trend"] = (
-                    self._market_trend.reindex(index=features.index).ffill().fillna(0)
-                )
-
-                # 添加市场回报率
-                if hasattr(self, "_market_data") and self._market_data is not None:
-                    market_returns = self._market_data["Close"].pct_change()
-                    features["market_returns"] = (
-                        market_returns.reindex(index=features.index).ffill().fillna(0)
-                    )
-
-                    # 计算相对强度
-                    if "returns_1d" in features.columns:
-                        features["relative_strength"] = (
-                            features["returns_1d"] - features["market_returns"]
-                        )
-                    else:
-                        features["relative_strength"] = 0
+                # Calculate relative strength using the aligned market returns
+                if 'returns_1d' in features.columns:
+                     # Ensure alignment before subtraction, fillna just in case
+                    aligned_market_returns = features['market_returns'].fillna(0)
+                    aligned_stock_returns = features['returns_1d'].fillna(0)
+                    features['relative_strength'] = aligned_stock_returns - aligned_market_returns
                 else:
-                    # 如果没有市场数据，使用默认值
-                    features["market_returns"] = (
-                        features["returns_1d"] * 0.8
-                        if "returns_1d" in features.columns
-                        else 0
-                    )
-                    features["relative_strength"] = (
-                        features["returns_1d"] * 0.2
-                        if "returns_1d" in features.columns
-                        else 0
-                    )
+                    features['relative_strength'] = 0 # Should not happen if returns_1d is calculated
             else:
-                features["market_trend"] = 0
-                # 添加默认的市场回报和相对强度
-                features["market_returns"] = (
-                    features["returns_1d"] * 0.8
-                    if "returns_1d" in features.columns
-                    else 0
-                )
-                features["relative_strength"] = (
-                    features["returns_1d"] * 0.2
-                    if "returns_1d" in features.columns
-                    else 0
-                )
+                logger.warning("Pre-fetched market data (_market_data_full) is missing or empty. Using default values for market features.")
+                features['market_trend'] = 0
+                features['market_returns'] = 0 # Or use stock returns as approximation? Be consistent.
+                features['relative_strength'] = 0
 
-            # 添加VIX相关指标
-            if hasattr(self, "_vix_close") and self._vix_close is not None:
-                # 使用ffill前向填充，再用均值填充剩余缺失值
-                features["vix"] = (
-                    self._vix_close.reindex(index=features.index)
-                    .ffill()
-                    .fillna(self._vix_mean)
-                )
-                features["vix_ma20"] = (
-                    self._vix_ma20.reindex(index=features.index)
-                    .ffill()
-                    .fillna(self._vix_ma20_mean)
-                )
-                features["vix_trend"] = (features["vix"] > features["vix_ma20"]).astype(
-                    int
-                )
+            # --- Use pre-fetched VIX Data ---
+            if self._vix_data_full is not None and not self._vix_data_full.empty:
+                # Calculate indicators from the full dataset once
+                vix_close = self._vix_data_full['Close']
+                vix_ma20 = vix_close.rolling(20).mean()
+                # Calculate means once, maybe store them in init if needed frequently
+                vix_mean = vix_close.mean()
+                vix_ma20_mean = vix_ma20.mean()
+
+                # Align VIX data and indicators
+                features['vix'] = vix_close.reindex(features.index, method='ffill').fillna(vix_mean if not pd.isna(vix_mean) else 20) # Use calculated mean or default 20
+                features['vix_ma20'] = vix_ma20.reindex(features.index, method='ffill').fillna(vix_ma20_mean if not pd.isna(vix_ma20_mean) else 20) # Use calculated mean or default 20
+                # Calculate trend based on aligned values
+                features['vix_trend'] = (features['vix'] > features['vix_ma20']).astype(int)
             else:
-                features["vix"] = 20  # VIX长期平均值
-                features["vix_ma20"] = 20
-                features["vix_trend"] = 0
+                logger.warning("Pre-fetched VIX data (_vix_data_full) is missing or empty. Using default values for VIX features.")
+                features['vix'] = 20
+                features['vix_ma20'] = 20
+                features['vix_trend'] = 0
 
         except Exception as e:
-            print(f"添加市场趋势和VIX特征时出错: {e}")
-            # 如果失败，添加默认值
-            features["market_trend"] = 0
-            features["vix"] = 20  # VIX的长期平均值约为20
-            features["vix_ma20"] = 20
-            features["vix_trend"] = 0
+            logger.error(f"Error processing pre-fetched market/VIX data in _create_features: {e}", exc_info=True)
+            features['market_trend'] = 0
+            features['market_returns'] = 0
+            features['relative_strength'] = 0
+            features['vix'] = 20
+            features['vix_ma20'] = 20
+            features['vix_trend'] = 0
 
         # 添加股票类型特征
         if hasattr(MLStrategy, "ticker") and MLStrategy.ticker is not None:
@@ -1617,12 +1543,3 @@ class MLStrategy(Strategy):
                 stats[t] = {"error": f"计算统计数据时出错: {e}"}
 
         return stats if ticker is None else stats[ticker]
-
-    def _create_default_vix(self):
-        """创建默认的VIX数据"""
-        print("使用默认VIX值 (20)")
-        # 创建默认的VIX数据属性
-        self._vix_close = pd.Series([20.0])  # 默认VIX值20
-        self._vix_ma20 = pd.Series([20.0])  # 默认MA20值20
-        self._vix_mean = 20.0
-        self._vix_ma20_mean = 20.0
