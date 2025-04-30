@@ -9,6 +9,7 @@ on:
 jobs:
   run-backtest:
     runs-on: ubuntu-latest
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -48,6 +49,6 @@ jobs:
         pip install --no-cache-dir --verbose "TA-Lib" # <-- Changed 'talib' to 'TA-Lib' and added --no-cache-dir
         # Make sure requirements.txt also uses the correct name if TA-Lib is listed there
         pip install -r requirements.txt
-        
+
     - name: Run backtest script
       run: python Backtesting/main.py --dataset MY
