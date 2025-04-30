@@ -7,7 +7,6 @@ on:
 
 jobs:
   run-backtest:
-    # 可以继续使用 ubuntu-22.04 或换回 ubuntu-latest，因为我们不再依赖 apt 安装 ta-lib C 库
     runs-on: ubuntu-22.04
 
     steps:
@@ -20,10 +19,9 @@ jobs:
         python-version: '3.11'
 
     - name: Install build dependencies (build-essential, wget)
-      # 只需要基本的编译工具和下载工具
       run: sudo apt-get update && sudo apt-get install -y build-essential wget
 
-    - name: Download, compile, and install TA-Lib C library
+    - name: Download, compile, and install TA-Lib C library (v0.4.0)
       run: |
         echo "Downloading TA-Lib C library source..."
         wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
@@ -36,32 +34,35 @@ jobs:
         make
         echo "Installing TA-Lib C library..."
         sudo make install
-        # 确保动态链接器能找到新安装的库
         echo "Updating dynamic linker cache..."
         sudo ldconfig
         cd ..
         echo "TA-Lib C library installation complete."
 
-    - name: Verify TA-Lib C library installation (Optional but helpful)
+    - name: Verify TA-Lib C library installation
       run: |
         echo "Verifying TA-Lib library files in /usr/lib..."
-        ls -l /usr/lib/libta_lib* || echo "Library file not found in /usr/lib"
+        ls -l /usr/lib/libta_lib* || (echo "Library file not found in /usr/lib!" && exit 1)
         echo "Verifying TA-Lib header file in /usr/include/ta-lib..."
-        ls -l /usr/include/ta-lib/ta_libc.h || echo "Header file not found in /usr/include/ta-lib"
+        ls -l /usr/include/ta-lib/ta_libc.h || (echo "Header file not found in /usr/include/ta-lib!" && exit 1)
 
-    - name: Install Python dependencies (controlled order)
+    - name: Install Python dependencies (with --no-build-isolation)
       run: |
         python -m pip install --upgrade pip
 
         # 1. 设置环境变量指向手动安装的 C 库路径
         export TA_INCLUDE_PATH="/usr/include"
         export TA_LIBRARY_PATH="/usr/lib"
+        # 可选：明确添加库路径给链接器，以防万一
+        export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
         echo "TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
         echo "TA_LIBRARY_PATH=${TA_LIBRARY_PATH}"
+        echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
 
-        # 2. 安装 requirements.txt 中的其余包
-        echo "Installing remaining requirements..."
-        pip install --no-build-isolation -r requirements.txt
+        # 2. 安装 requirements.txt 中的包
+        #    *** 使用 --no-build-isolation ***
+        echo "Installing requirements from requirements.txt using --no-build-isolation..."
+        pip install --no-build-isolation -r requirements.txt --verbose
 
     - name: Run backtest script
       run: python Backtesting/main.py --dataset MY
