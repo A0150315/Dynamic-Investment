@@ -1,3 +1,10 @@
+name: Daily Backtest MY Dataset
+
+on:
+  schedule:
+    - cron: '30 23 * * *'
+  workflow_dispatch:
+
 jobs:
   run-backtest:
     runs-on: ubuntu-latest
@@ -14,6 +21,7 @@ jobs:
     - name: Install TA-Lib C library and build dependencies
       run: |
         sudo apt-get update
+        # Installs ta-lib library and headers, plus build tools
         sudo apt-get install -y build-essential libta-lib-dev
 
     - name: Install Python dependencies
