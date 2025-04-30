@@ -1,52 +1,53 @@
-    name: Daily Backtest MY Dataset
 
-    on:
-      schedule:
-        # 每天 UTC 时间 00:30 运行 (对应 UTC+7 07:30)
-        - cron: '30 23 * * *'
-      workflow_dispatch:
+name: Daily Backtest MY Dataset
 
-    jobs:
-      run-backtest:
-        runs-on: ubuntu-latest
+on:
+  schedule:
+    - cron: '30 23 * * *'
+  workflow_dispatch:
 
-        steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
+jobs:
+  run-backtest:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-        - name: Set up Python
-          uses: actions/setup-python@v5
-          with:
-            python-version: '3.11'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-        - name: Install build dependencies
-          run: sudo apt-get update && sudo apt-get install -y build-essential wget
+    - name: Install build dependencies
+      run: sudo apt-get update && sudo apt-get install -y build-essential wget
 
-        - name: Download and install TA-Lib
-          run: |
-            wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-            tar -xzf ta-lib-0.4.0-src.tar.gz
-            cd ta-lib/
-            ./configure --prefix=/usr
-            make
-            sudo make install
-            sudo ldconfig
-            cd ..
+    - name: Download and install TA-Lib
+      run: |
+        wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+        tar -xzf ta-lib-0.4.0-src.tar.gz
+        cd ta-lib/
+        ./configure --prefix=/usr
+        make
+        sudo make install
+        sudo ldconfig
+        cd ..
 
-        - name: Verify TA-Lib installation
-          run: |
-            ls -l /usr/lib/libta_lib*
-            ls -l /usr/include/ta-lib/ta_libc.h
+    - name: Verify TA-Lib installation
+      run: |
+        ls -l /usr/lib/libta_lib*
+        ls -l /usr/include/ta-lib/ta_libc.h
 
-        - name: Install Python dependencies
-          env:
-            TA_INCLUDE_PATH: "/usr/include"
-            TA_LIBRARY_PATH: "/usr/lib"
-          run: |
-            python -m pip install --upgrade pip
-            echo "Attempting to install talib with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
-            pip install talib --verbose
-            pip install -r requirements.txt
-
-        - name: Run backtest script
-          run: python Backtesting/main.py --dataset MY
+    - name: Install Python dependencies
+      env:
+        TA_INCLUDE_PATH: "/usr/include"
+        TA_LIBRARY_PATH: "/usr/lib"
+      run: |
+        python -m pip install --upgrade pip
+        echo "Attempting to install TA-Lib with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
+        # Use the official package name TA-Lib
+        pip install --no-cache-dir --verbose "TA-Lib" # <-- Changed 'talib' to 'TA-Lib' and added --no-cache-dir
+        # Make sure requirements.txt also uses the correct name if TA-Lib is listed there
+        pip install -r requirements.txt
+        
+    - name: Run backtest script
+      run: python Backtesting/main.py --dataset MY
