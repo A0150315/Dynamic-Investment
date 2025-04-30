@@ -33,9 +33,19 @@
             sudo ldconfig
             cd ..
 
+        - name: Verify TA-Lib installation
+          run: |
+            ls -l /usr/lib/libta_lib*
+            ls -l /usr/include/ta-lib/ta_libc.h
+
         - name: Install Python dependencies
+          env:
+            TA_INCLUDE_PATH: "/usr/include"
+            TA_LIBRARY_PATH: "/usr/lib"
           run: |
             python -m pip install --upgrade pip
+            echo "Attempting to install talib with TA_LIBRARY_PATH=${TA_LIBRARY_PATH} and TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
+            pip install talib --verbose
             pip install -r requirements.txt
 
         - name: Run backtest script
