@@ -53,13 +53,12 @@ jobs:
         # 1. 设置环境变量指向手动安装的 C 库路径
         export TA_INCLUDE_PATH="/usr/include"
         export TA_LIBRARY_PATH="/usr/lib"
-        # 可选：明确添加库路径给链接器，以防万一
         export LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
         echo "TA_INCLUDE_PATH=${TA_INCLUDE_PATH}"
         echo "TA_LIBRARY_PATH=${TA_LIBRARY_PATH}"
         echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
 
-        # 2. 安装 requirements.txt 中的包
+        # 2. 安装 requirements.txt 中的包 (确保 TA-Lib 版本已固定为 0.4.x)
         #    *** 使用 --no-build-isolation ***
         echo "Installing requirements from requirements.txt using --no-build-isolation..."
         pip install --no-build-isolation -r requirements.txt --verbose
