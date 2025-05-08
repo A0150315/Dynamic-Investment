@@ -13,6 +13,7 @@ from model_trainer import train_master_model
 from stock_categories import get_recommended_training_set
 
 sum_map = {}
+all_trade_operations_for_csv = []
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -101,6 +102,18 @@ def out_put_result(data):
     )
     # 格式化最后10条记录
     last_10_actions = action_log[-10:]
+    last_action_log = last_10_actions[-1]
+    if last_action_log:
+        action_type, time, price, size = last_action_log
+        all_trade_operations_for_csv.append({
+            "ticker": ticker,
+            "action": action_type,
+            "time": time,
+            "price": price,
+            "size": size,
+            "prediction": last_prediction,
+        })
+
     formatted_log_entries = []
     for i, action_record in enumerate(reversed(last_10_actions)):
         if len(action_record) >= 4:
@@ -324,5 +337,16 @@ if __name__ == "__main__":
 
         log_file_path = f"{today.strftime('%Y-%m-%d')}.log"
         send_log_by_email(log_file_path, delete_after=True)
+    
+
+        # 排序，先根据时间排序，再根据prediction排序
+        all_trade_operations_for_csv.sort(key=lambda x: (x["time"], x["prediction"]))
+        import pandas as pd
+
+        csv_file_path = f"{today.strftime('%Y-%m-%d')}.csv"
+        df = pd.DataFrame(all_trade_operations_for_csv)
+        df.to_csv(csv_file_path, index=False)
+        print(f"交易记录已保存至：{csv_file_path}")
+        send_log_by_email(csv_file_path, delete_after=True)
     except Exception as e:
         print(f"发送日志邮件时出错: {e}")
