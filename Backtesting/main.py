@@ -102,17 +102,6 @@ def out_put_result(data):
     )
     # 格式化最后10条记录
     last_10_actions = action_log[-10:]
-    last_action_log = last_10_actions[-1]
-    if last_action_log:
-        action_type, time, price, size = last_action_log
-        all_trade_operations_for_csv.append({
-            "ticker": ticker,
-            "action": action_type,
-            "time": time,
-            "price": price,
-            "size": size,
-            "prediction": last_prediction,
-        })
 
     formatted_log_entries = []
     for i, action_record in enumerate(reversed(last_10_actions)):
@@ -129,9 +118,11 @@ def out_put_result(data):
     logging.info(log_message)
 
     print("\n【投资建议】")
+    reason = ""
     logging.info(f"{ticker} {last_date.strftime('%Y-%m-%d')}")
     if last_prediction > dynamic_threshold:
-        logging.info(f"预测上涨")
+        reason = f"预测上涨"
+        logging.info(reason)
         buy_size = strategy_instance.calculate_position_size(
             last_prediction, last_price, strategy_instance.equity
         )
@@ -167,7 +158,8 @@ def out_put_result(data):
                 f"原因: 预测值 {last_prediction:.4f} > 阈值 {dynamic_threshold:.2f}，预计市场将上涨，当前无持仓，无需操作"
             )
     elif last_prediction < (1 - dynamic_threshold):
-        logging.info(f"预测下跌，有就卖")
+        reason = f"预测下跌，有就卖"
+        logging.info(reason)
         if last_action == "sell" or not last_action:
             # 已经卖出或从未买入
             logging.info(f"建议: 观望 (WAIT)")
@@ -181,6 +173,7 @@ def out_put_result(data):
                 f"原因: 预测值 {last_prediction:.4f} < 阈值 {1-dynamic_threshold:.2f}，预计市场将下跌"
             )
     else:
+        reason = f"预测在不确定区间，观望"
         logging.info(f"止损：{strategy_instance.stop_loss_pct},卖出")
         logging.info(f"止盈：{strategy_instance.take_profit_pct}，卖一半")
         # 观望
@@ -188,6 +181,19 @@ def out_put_result(data):
         logging.info(
             f"原因: 预测值 {last_prediction:.4f} 在不确定区间 [{1-dynamic_threshold:.2f}, {dynamic_threshold:.2f}]，建议持观望态度"
         )
+    
+    last_action_log = last_10_actions[-1]
+    if last_action_log:
+        action_type, time, price, size = last_action_log
+        all_trade_operations_for_csv.append({
+            "ticker": ticker,
+            "action": action_type,
+            "time": time,
+            "price": price,
+            "size": size,
+            "prediction": last_prediction,
+            "reason": reason,
+        })
 
     logging.info("=" * 50)
 
