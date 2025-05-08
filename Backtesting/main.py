@@ -340,7 +340,7 @@ if __name__ == "__main__":
     
 
         # 排序，先根据时间排序，再根据prediction排序
-        all_trade_operations_for_csv.sort(key=lambda x: (x["time"], x["prediction"]))
+        all_trade_operations_for_csv.sort(key=lambda x: (-x["time"].value, -x["prediction"]))
         import pandas as pd
 
         csv_file_path = f"{today.strftime('%Y-%m-%d')}.csv"
