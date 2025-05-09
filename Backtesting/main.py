@@ -14,6 +14,7 @@ from stock_categories import get_recommended_training_set
 
 sum_map = {}
 all_trade_operations_for_csv = []
+all_tickers_trade_records = {}
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -29,7 +30,7 @@ logger.addHandler(handler)
 data_service = DataService()
 
 
-def out_put_result(data):
+def out_put_result(strategy_instance, data, current_trade_record):
     """
     根据回测结果和MLStrategy.trade_records，输出第二天的投资建议
 
@@ -39,13 +40,13 @@ def out_put_result(data):
     Returns:
         None，直接打印投资建议
     """
-    ticker = MLStrategy.ticker
-    if not ticker or ticker not in MLStrategy.trade_records:
+    ticker = strategy_instance.ticker
+    if not ticker or not current_trade_record:
         print("未找到交易记录，无法提供建议")
         return
 
     # 获取ticker的交易记录
-    record = MLStrategy.trade_records[ticker]
+    record = current_trade_record
     last_action = record.get("last_action")
     action_log = record.get("action_log") or []
     last_action_time = record.get("last_action_time")
@@ -55,36 +56,16 @@ def out_put_result(data):
     last_date = data.index[-1]
     last_price = data.Close[-1]
 
-    strategy_instance = None
     # 获取最后一天的预测
-    if hasattr(MLStrategy, "instance") and MLStrategy.instance:
-        strategy_instance = MLStrategy.instance
-        if (
-            hasattr(strategy_instance, "predictions")
-            and len(strategy_instance.predictions) > 0
-        ):
-            last_prediction = strategy_instance.predictions[-1]
-            dynamic_threshold = strategy_instance.dynamic_threshold
-        else:
-            print("未找到预测数据，无法提供建议")
-            return
+    if (
+        hasattr(strategy_instance, "predictions")
+        and len(strategy_instance.predictions) > 0
+    ):
+        last_prediction = strategy_instance.predictions[-1]
+        dynamic_threshold = strategy_instance.dynamic_threshold
     else:
-        # 尝试从模型重新获取预测
-        try:
-            # 创建临时策略实例进行预测
-            temp_strategy = MLStrategy()
-            strategy_instance = temp_strategy
-            temp_strategy.ticker = ticker
-            temp_strategy.data = data
-            temp_strategy.init()
-            temp_strategy._train_model()
-
-            # 获取最后一天的预测
-            last_prediction = temp_strategy.predictions[-1]
-            dynamic_threshold = temp_strategy.dynamic_threshold
-        except Exception as e:
-            print(f"尝试获取预测时出错: {e}")
-            return
+        print("未找到预测数据，无法提供建议")
+        return
 
     # 根据预测值和阈值确定投资建议
     next_date = last_date + pd.Timedelta(days=1)
@@ -181,19 +162,21 @@ def out_put_result(data):
         logging.info(
             f"原因: 预测值 {last_prediction:.4f} 在不确定区间 [{1-dynamic_threshold:.2f}, {dynamic_threshold:.2f}]，建议持观望态度"
         )
-    
+
     last_action_log = last_10_actions[-1]
     if last_action_log:
         action_type, time, price, size = last_action_log
-        all_trade_operations_for_csv.append({
-            "ticker": ticker,
-            "action": action_type,
-            "time": time,
-            "price": price,
-            "size": size,
-            "prediction": last_prediction,
-            "reason": reason,
-        })
+        all_trade_operations_for_csv.append(
+            {
+                "ticker": ticker,
+                "action": action_type,
+                "time": time,
+                "price": price,
+                "size": size,
+                "prediction": last_prediction,
+                "reason": reason,
+            }
+        )
 
     logging.info("=" * 50)
 
@@ -230,33 +213,40 @@ def main(ticker, end_date=None):
     output_dir = "backtest_results"
     os.makedirs(output_dir, exist_ok=True)
 
-    for strategy in [
-        MLStrategy,
-    ]:
+    for strategy_class in [MLStrategy]:
         # 设置使用主模型的标志
-        if strategy == MLStrategy:
+        if strategy_class == MLStrategy:
             MLStrategy.use_master_model = True
         else:
             MLStrategy.use_master_model = False
 
-        print(f"\n############################回测策略: {strategy.__name__} - {ticker}")
-        strategy.ticker = ticker
-        bt = Backtest(data, strategy, cash=2000, commission=0.0015)
+        print(
+            f"\n############################回测策略: {strategy_class.__name__} - {ticker}"
+        )
+        strategy_class.ticker = ticker
+        bt = Backtest(data, strategy_class, cash=2000, commission=0.0015)
         stats = bt.run()
 
+        strategy_instance = stats["_strategy"]
+
+        current_ticker_trade_record = strategy_instance.instance_trade_record
+        all_tickers_trade_records[ticker] = current_ticker_trade_record
+
         # 保存HTML文件，文件名包含ticker和策略名称
-        html_filename = f"{output_dir}/{ticker}_{strategy.__name__}.html"
+        html_filename = (
+            f"{output_dir}/{ticker}_{strategy_instance.__class__.__name__}.html"
+        )
         # bt.plot(filename=html_filename)
         print(f"回测结果已保存至：{html_filename}")
 
-        out_put_result(data)
+        out_put_result(strategy_instance, data, current_ticker_trade_record)
         result = (
             stats["_equity_curve"]["Equity"].iloc[-1]
             - stats["_equity_curve"]["Equity"].iloc[0]
         )
 
         # 更新结果汇总
-        strategy_key = f"{strategy.__name__}"
+        strategy_key = f"{strategy_class.__name__}"
         if strategy_key in sum_map:
             sum_map[strategy_key] += result
         else:
@@ -343,10 +333,11 @@ if __name__ == "__main__":
 
         log_file_path = f"{today.strftime('%Y-%m-%d')}.log"
         send_log_by_email(log_file_path, delete_after=True)
-    
 
         # 排序，先根据时间排序，再根据prediction排序
-        all_trade_operations_for_csv.sort(key=lambda x: (-x["time"].value, -x["prediction"]))
+        all_trade_operations_for_csv.sort(
+            key=lambda x: (-x["time"].value, -x["prediction"])
+        )
         import pandas as pd
 
         csv_file_path = f"{today.strftime('%Y-%m-%d')}.csv"

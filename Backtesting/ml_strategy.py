@@ -38,9 +38,6 @@ class MLStrategy(Strategy):
     master_model = None
     master_model_path = "models/master_model.pkl"
 
-    # 交易记录存储
-    trade_records = {}  # 按ticker存储交易记录的类变量
-
     # 存储当前实例，方便外部访问
     instance = None
 
@@ -48,9 +45,6 @@ class MLStrategy(Strategy):
         """
         策略初始化
         """
-        # 保存当前实例到类变量，方便外部访问
-        MLStrategy.instance = self
-
         self.data_service = DataService()
 
         # 获取整个回测期间的日期范围
@@ -70,11 +64,13 @@ class MLStrategy(Strategy):
             )
             logger.info("Market and VIX data pre-fetching complete.")
         else:
-             logger.warning("self.data.index is empty or None in init. Cannot pre-fetch market/VIX data.")
-             self.global_start_date = None
-             self.global_end_date = None
-             self._market_data_full = None
-             self._vix_data_full = None
+            logger.warning(
+                "self.data.index is empty or None in init. Cannot pre-fetch market/VIX data."
+            )
+            self.global_start_date = None
+            self.global_end_date = None
+            self._market_data_full = None
+            self._vix_data_full = None
 
         # 为随机数生成器设置固定种子，确保结果可重复
         np.random.seed(42)
@@ -102,22 +98,16 @@ class MLStrategy(Strategy):
         self.dynamic_threshold = self.prediction_threshold  # 动态调整的阈值
         self.market_regime = None  # 市场状态：bull, bear, neutral
 
-        # 为当前ticker初始化交易记录
-        if (
-            MLStrategy.ticker is not None
-            and MLStrategy.ticker not in MLStrategy.trade_records
-        ):
-            MLStrategy.trade_records[MLStrategy.ticker] = {
-                "open_trades": [],  # 当前持有的交易 [(时间, 价格, 数量),...]
-                "closed_trades": [],  # 已平仓的交易 [(买入时间, 买入价格, 数量, 卖出时间, 卖出价格, 收益率),...]
-                "last_action": None,  # 最后一次操作, 'buy' 或 'sell'
-                "last_action_price": None,  # 最后一次操作价格
-                "last_action_time": None,  # 最后一次操作时间
-                "trade_count": 0,  # 总交易次数
-                "action_log": [],  # 记录所有买卖操作的日志 [('buy'/'sell', time, price, size), ...]
-            }
-        elif MLStrategy.ticker is None:
-            print("警告: ticker为None，无法初始化交易记录")
+        # 交易记录
+        self.instance_trade_record = {
+            "open_trades": [],
+            "closed_trades": [],
+            "last_action": None,
+            "last_action_price": None,
+            "last_action_time": None,
+            "trade_count": 0,
+            "action_log": [],
+        }
 
         # 在策略初始化时训练模型
         self._train_model()
@@ -339,58 +329,85 @@ class MLStrategy(Strategy):
                 # Calculate indicators from the full dataset once
                 # Check if these calculations were already done and cached, if performance is an issue
                 # For simplicity now, we recalculate based on the full data
-                market_close = self._market_data_full['Close']
+                market_close = self._market_data_full["Close"]
                 market_ma50 = market_close.rolling(50).mean()
                 market_ma200 = market_close.rolling(200).mean()
                 market_trend = (market_ma50 > market_ma200).astype(int)
                 market_returns = market_close.pct_change()
 
                 # Align the calculated series to the current features DataFrame index
-                features['market_trend'] = market_trend.reindex(features.index, method='ffill').fillna(0)
-                features['market_returns'] = market_returns.reindex(features.index, method='ffill').fillna(0)
+                features["market_trend"] = market_trend.reindex(
+                    features.index, method="ffill"
+                ).fillna(0)
+                features["market_returns"] = market_returns.reindex(
+                    features.index, method="ffill"
+                ).fillna(0)
 
                 # Calculate relative strength using the aligned market returns
-                if 'returns_1d' in features.columns:
-                     # Ensure alignment before subtraction, fillna just in case
-                    aligned_market_returns = features['market_returns'].fillna(0)
-                    aligned_stock_returns = features['returns_1d'].fillna(0)
-                    features['relative_strength'] = aligned_stock_returns - aligned_market_returns
+                if "returns_1d" in features.columns:
+                    # Ensure alignment before subtraction, fillna just in case
+                    aligned_market_returns = features["market_returns"].fillna(0)
+                    aligned_stock_returns = features["returns_1d"].fillna(0)
+                    features["relative_strength"] = (
+                        aligned_stock_returns - aligned_market_returns
+                    )
                 else:
-                    features['relative_strength'] = 0 # Should not happen if returns_1d is calculated
+                    features["relative_strength"] = (
+                        0  # Should not happen if returns_1d is calculated
+                    )
             else:
-                logger.warning("Pre-fetched market data (_market_data_full) is missing or empty. Using default values for market features.")
-                features['market_trend'] = 0
-                features['market_returns'] = 0 # Or use stock returns as approximation? Be consistent.
-                features['relative_strength'] = 0
+                logger.warning(
+                    "Pre-fetched market data (_market_data_full) is missing or empty. Using default values for market features."
+                )
+                features["market_trend"] = 0
+                features["market_returns"] = (
+                    0  # Or use stock returns as approximation? Be consistent.
+                )
+                features["relative_strength"] = 0
 
             # --- Use pre-fetched VIX Data ---
             if self._vix_data_full is not None and not self._vix_data_full.empty:
                 # Calculate indicators from the full dataset once
-                vix_close = self._vix_data_full['Close']
+                vix_close = self._vix_data_full["Close"]
                 vix_ma20 = vix_close.rolling(20).mean()
                 # Calculate means once, maybe store them in init if needed frequently
                 vix_mean = vix_close.mean()
                 vix_ma20_mean = vix_ma20.mean()
 
                 # Align VIX data and indicators
-                features['vix'] = vix_close.reindex(features.index, method='ffill').fillna(vix_mean if not pd.isna(vix_mean) else 20) # Use calculated mean or default 20
-                features['vix_ma20'] = vix_ma20.reindex(features.index, method='ffill').fillna(vix_ma20_mean if not pd.isna(vix_ma20_mean) else 20) # Use calculated mean or default 20
+                features["vix"] = vix_close.reindex(
+                    features.index, method="ffill"
+                ).fillna(
+                    vix_mean if not pd.isna(vix_mean) else 20
+                )  # Use calculated mean or default 20
+                features["vix_ma20"] = vix_ma20.reindex(
+                    features.index, method="ffill"
+                ).fillna(
+                    vix_ma20_mean if not pd.isna(vix_ma20_mean) else 20
+                )  # Use calculated mean or default 20
                 # Calculate trend based on aligned values
-                features['vix_trend'] = (features['vix'] > features['vix_ma20']).astype(int)
+                features["vix_trend"] = (features["vix"] > features["vix_ma20"]).astype(
+                    int
+                )
             else:
-                logger.warning("Pre-fetched VIX data (_vix_data_full) is missing or empty. Using default values for VIX features.")
-                features['vix'] = 20
-                features['vix_ma20'] = 20
-                features['vix_trend'] = 0
+                logger.warning(
+                    "Pre-fetched VIX data (_vix_data_full) is missing or empty. Using default values for VIX features."
+                )
+                features["vix"] = 20
+                features["vix_ma20"] = 20
+                features["vix_trend"] = 0
 
         except Exception as e:
-            logger.error(f"Error processing pre-fetched market/VIX data in _create_features: {e}", exc_info=True)
-            features['market_trend'] = 0
-            features['market_returns'] = 0
-            features['relative_strength'] = 0
-            features['vix'] = 20
-            features['vix_ma20'] = 20
-            features['vix_trend'] = 0
+            logger.error(
+                f"Error processing pre-fetched market/VIX data in _create_features: {e}",
+                exc_info=True,
+            )
+            features["market_trend"] = 0
+            features["market_returns"] = 0
+            features["relative_strength"] = 0
+            features["vix"] = 20
+            features["vix_ma20"] = 20
+            features["vix_trend"] = 0
 
         # 添加股票类型特征
         if hasattr(MLStrategy, "ticker") and MLStrategy.ticker is not None:
@@ -1282,25 +1299,14 @@ class MLStrategy(Strategy):
                 trade_record = (current_time, price_before, actual_size)
                 self.my_open_trades.append(trade_record)
 
-                # 同时记录到类变量
-                if (
-                    MLStrategy.ticker is not None
-                    and MLStrategy.ticker in MLStrategy.trade_records
-                ):
-                    MLStrategy.trade_records[MLStrategy.ticker]["open_trades"].append(
-                        trade_record
-                    )
-                    MLStrategy.trade_records[MLStrategy.ticker]["last_action"] = "buy"
-                    MLStrategy.trade_records[MLStrategy.ticker][
-                        "last_action_price"
-                    ] = price_before
-                    MLStrategy.trade_records[MLStrategy.ticker][
-                        "last_action_time"
-                    ] = current_time
-                    MLStrategy.trade_records[MLStrategy.ticker]["trade_count"] += 1
-                    MLStrategy.trade_records[MLStrategy.ticker]["action_log"].append(
-                        ("buy", current_time, price_before, actual_size)
-                    )
+                self.instance_trade_record["open_trades"].append(trade_record)
+                self.instance_trade_record["last_action"] = "buy"
+                self.instance_trade_record["last_action_price"] = price_before
+                self.instance_trade_record["last_action_time"] = current_time
+                self.instance_trade_record["trade_count"] += 1
+                self.instance_trade_record["action_log"].append(
+                    ("buy", current_time, price_before, actual_size)
+                )
 
                 print(
                     f"记录买入交易: 时间={current_time}, 价格={price_before:.2f}, 数量={actual_size}"
@@ -1416,32 +1422,17 @@ class MLStrategy(Strategy):
 
                         self.my_open_trades = new_trades
 
-                    # 记录到类变量
-                    if (
-                        MLStrategy.ticker is not None
-                        and MLStrategy.ticker in MLStrategy.trade_records
-                    ):
-                        # 更新open_trades
-                        MLStrategy.trade_records[MLStrategy.ticker][
-                            "open_trades"
-                        ] = self.my_open_trades.copy()
+                    self.instance_trade_record["open_trades"] = (
+                        self.my_open_trades.copy()
+                    )
+                    self.instance_trade_record["closed_trades"].append(closed_trade)
+                    self.instance_trade_record["last_action"] = "sell"
+                    self.instance_trade_record["last_action_time"] = current_time
+                    self.instance_trade_record["last_action_price"] = price_before
+                    self.instance_trade_record["action_log"].append(
+                        ("sell", current_time, price_before, actual_size)
+                    )
 
-                        # 添加到closed_trades
-                        MLStrategy.trade_records[MLStrategy.ticker][
-                            "closed_trades"
-                        ].append(closed_trade)
-                        MLStrategy.trade_records[MLStrategy.ticker][
-                            "last_action"
-                        ] = "sell"
-                        MLStrategy.trade_records[MLStrategy.ticker][
-                            "last_action_time"
-                        ] = current_time
-                        MLStrategy.trade_records[MLStrategy.ticker][
-                            "last_action_price"
-                        ] = price_before
-                        MLStrategy.trade_records[MLStrategy.ticker][
-                            "action_log"
-                        ].append(("sell", current_time, price_before, actual_size))
                     print(
                         f"记录卖出交易: 时间={current_time}, 价格={price_before:.2f}, "
                         f"数量={actual_size}, 收益率={profit_pct:.2f}%"
@@ -1452,94 +1443,3 @@ class MLStrategy(Strategy):
         except Exception as e:
             print(f"卖出操作失败: {e}")
             return False
-
-    @classmethod
-    def get_trade_stats(cls, ticker=None):
-        """
-        获取特定股票或所有股票的交易统计
-        ticker: 股票代码，如果为None则返回所有股票的统计
-        返回: 交易统计信息
-        """
-        stats = {}
-
-        # 防御性检查：确保trade_records不为空
-        if not cls.trade_records:
-            print("警告: 没有可用的交易记录")
-            if ticker is not None:
-                return {"error": "没有可用的交易记录"}
-            return {}
-
-        # 获取目标股票的交易记录
-        if ticker is not None:
-            if ticker in cls.trade_records:
-                tickers = [ticker]
-            else:
-                print(f"警告: 未找到代码为 {ticker} 的交易记录")
-                return {"error": f"未找到代码为 {ticker} 的交易记录"}
-        else:
-            tickers = list(cls.trade_records.keys())
-
-        # 计算每个股票的统计
-        for t in tickers:
-            try:
-                record = cls.trade_records[t]
-
-                # 防御性检查
-                if "closed_trades" not in record or "open_trades" not in record:
-                    print(f"警告: 代码 {t} 的交易记录格式不正确")
-                    stats[t] = {"error": "交易记录格式不正确"}
-                    continue
-
-                # 计算胜率
-                closed_trades = record["closed_trades"]
-                wins = sum(
-                    1 for trade in closed_trades if len(trade) >= 6 and trade[5] > 0
-                )
-                losses = sum(
-                    1 for trade in closed_trades if len(trade) >= 6 and trade[5] <= 0
-                )
-                win_rate = wins / max(1, wins + losses)
-
-                # 计算平均收益
-                if closed_trades:
-                    # 确保每个交易记录都是有效的
-                    valid_trades = [trade for trade in closed_trades if len(trade) >= 6]
-                    if valid_trades:
-                        avg_return = sum(trade[5] for trade in valid_trades) / len(
-                            valid_trades
-                        )
-
-                        # 找到最佳和最差交易
-                        best_trade = max(valid_trades, key=lambda x: x[5])
-                        worst_trade = min(valid_trades, key=lambda x: x[5])
-
-                        best_return = best_trade[5]
-                        worst_return = worst_trade[5]
-                    else:
-                        avg_return = 0
-                        best_return = 0
-                        worst_return = 0
-                else:
-                    avg_return = 0
-                    best_return = 0
-                    worst_return = 0
-
-                # 当前持仓
-                open_trades = record["open_trades"]
-
-                # 汇总统计
-                stats[t] = {
-                    "win_rate": win_rate,
-                    "avg_return": avg_return,
-                    "total_trades": wins + losses,
-                    "wins": wins,
-                    "losses": losses,
-                    "open_positions": len(open_trades),
-                    "best_trade": best_return,
-                    "worst_trade": worst_return,
-                }
-            except Exception as e:
-                print(f"计算 {t} 的统计数据时出错: {e}")
-                stats[t] = {"error": f"计算统计数据时出错: {e}"}
-
-        return stats if ticker is None else stats[ticker]
