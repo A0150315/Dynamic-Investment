@@ -2,7 +2,7 @@ name: Daily Backtest MY Dataset
 
 on:
   schedule:
-    - cron: '30 23 * * *'
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
