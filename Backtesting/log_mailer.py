@@ -18,11 +18,11 @@ def send_log_by_email(log_file_path, delete_after=True):
     """
     try:
         # 邮件设置
-        smtp_server = "smtp.mail.me.com"
-        port = 587
-        sender_email = "tjqtest@icloud.com"
-        sender_name = "tjqtest"
-        password = "cbwp-skef-rzrs-gntp"
+        smtp_server = "smtp.163.com"
+        port = 25
+        sender_email = "tjqtest@163.com"
+        sender_name = "Investment"
+        password = "ZEUR238ZatiUWJ3Y"
         receiver_email = "574469551@qq.com"
         
         # 检查日志文件是否存在
